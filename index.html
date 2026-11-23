@@ -1,0 +1,3355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHÀ CỦA THUẬN - Không Gian Gia Đình 5D</title>
+
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Phông chữ Inter hiện đại, rõ nét tiếng Việt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Thư viện Three.js cho không gian 3D/5D tương tác -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Thư viện Tone.js cho hiệu ứng âm thanh 5D & nhạc nền dịu nhẹ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Nền xanh nhạt phối xanh lá rừng và điểm nhấn nhẹ màu vàng tennis */
+        html, body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            background: #d8f1ff;
+            color: #0f3d2e;
+        }
+
+        /* Canvas Three.js phủ toàn màn hình */
+        #three-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            cursor: grab;
+            touch-action: none;
+        }
+        #three-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Hiệu ứng kính mờ xanh nhạt viền xanh lá rừng thanh lịch */
+        .glass-card {
+            background: rgba(235, 249, 255, 0.84);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1.5px solid rgba(22, 101, 52, 0.26);
+            box-shadow: 0 18px 46px rgba(15, 61, 46, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        }
+
+        .glass-dark {
+            background: rgba(15, 61, 46, 0.9);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1.5px solid rgba(212, 255, 0, 0.55);
+            box-shadow: 0 20px 50px rgba(10, 42, 31, 0.35);
+        }
+
+        /* Hiệu ứng nổi 3D với viền xanh lá rừng & ánh vàng tennis nhẹ khi di chuột */
+        .tilt-card {
+            transform-style: preserve-3d;
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+            will-change: transform;
+        }
+        .tilt-card:hover {
+            box-shadow: 0 26px 56px rgba(15, 61, 46, 0.2), 0 0 0 2px rgba(22, 101, 52, 0.65), 0 0 24px rgba(212, 255, 0, 0.35);
+        }
+
+        /* Hiệu ứng cổng chào tỏa sáng ánh vàng tennis pha xanh lá rừng */
+        @keyframes gatePulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(212, 255, 0, 0.62), 0 16px 40px rgba(20, 83, 45, 0.34);
+            }
+            50% {
+                box-shadow: 0 0 0 16px rgba(212, 255, 0, 0), 0 22px 54px rgba(22, 101, 52, 0.45);
+            }
+        }
+        .gate-portal-btn {
+            animation: gatePulse 2.8s ease-in-out infinite;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-9px); }
+        }
+        .animate-float {
+            animation: floatSlow 4.2s ease-in-out infinite;
+        }
+
+        /* Hiệu ứng chuyển cảnh mượt mà */
+        @keyframes fadeSlideIn {
+            0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .view-enter {
+            animation: fadeSlideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Hiệu ứng tia sáng quét qua nút cổng chào */
+        @keyframes shineSweep {
+            0% { transform: translateX(-140%) skewX(-20deg); }
+            100% { transform: translateX(260%) skewX(-20deg); }
+        }
+        .btn-shine::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 45%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(226, 255, 74, 0.38), transparent);
+            animation: shineSweep 3.2s infinite;
+        }
+
+        /* Hiệu ứng tim bay khi tương tác */
+        @keyframes heartFloatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.7) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-160px) scale(1.45) rotate(18deg); }
+        }
+        .floating-heart {
+            position: fixed;
+            pointer-events: none;
+            z-index: 60;
+            animation: heartFloatUp 1.5s ease-out forwards;
+        }
+
+        /* Hiệu ứng sóng nhạc nhảy nhẹ khi đang phát nhạc nền */
+        @keyframes eqBounce {
+            0%, 100% { height: 4px; }
+            50% { height: 14px; }
+        }
+        .eq-bar {
+            width: 3px;
+            border-radius: 9999px;
+            background: #d4ff00;
+            animation: eqBounce 0.75s ease-in-out infinite;
+        }
+        .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Thanh cuộn tinh tế tông xanh nhạt - xanh lá rừng */
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(216, 241, 255, 0.85);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(22, 101, 52, 0.65);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #14532d;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-[#0f3d2e] relative">
+
+    <!-- ===================================================================== -->
+    <!-- LỚP KHÔNG GIAN 3D / 5D (THREE.JS WEBGL CANVAS)                        -->
+    <!-- ===================================================================== -->
+    <canvas id="three-canvas" aria-label="Không gian 5D Gia đình Thuận"></canvas>
+
+    <!-- Lớp chuyển cảnh ánh sáng xanh nhạt - xanh lá rừng - vàng tennis khi bay qua cổng chào -->
+    <div id="warp-flash" class="fixed inset-0 z-40 pointer-events-none opacity-0 transition-opacity duration-500 bg-gradient-to-b from-sky-200/90 via-[#d9ff26]/45 to-emerald-900/80 backdrop-blur-md"></div>
+
+    <!-- ===================================================================== -->
+    <!-- THANH ĐIỀU KHIỂN 5D NỔI PHÍA TRÊN                                     -->
+    <!-- ===================================================================== -->
+    <header id="top-nav" class="fixed top-0 left-0 right-0 z-30 px-3 sm:px-6 py-3 pointer-events-none">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+            <!-- Nút về Giao diện chính (Cổng Chào) & Sảnh Chính -->
+            <div class="pointer-events-auto flex items-center gap-2">
+                <button
+                    type="button"
+                    id="nav-btn-home"
+                    onclick="navigateTo('gate')"
+                    class="glass-card hover:bg-sky-100/95 active:scale-95 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-extrabold text-[#0f3d2e] flex items-center gap-2 transition cursor-pointer"
+                    title="Về giao diện chính (Cổng Chào)"
+                >
+                    <span class="w-7 h-7 rounded-xl bg-gradient-to-br from-[#14532d] to-[#166534] border border-[#d4ff00]/80 text-white flex items-center justify-center shadow-sm text-sm">🏡</span>
+                    <span>NHÀ CỦA THUẬN</span>
+                </button>
+
+                <button
+                    type="button"
+                    id="nav-btn-hall"
+                    onclick="currentView === 'gate' ? enterFamilyHall() : navigateTo('hall')"
+                    class="glass-card hover:bg-sky-100/95 active:scale-95 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold text-[#14532d] flex items-center gap-1.5 transition cursor-pointer"
+                >
+                    <span>✨ Sảnh Chính</span>
+                </button>
+            </div>
+
+            <!-- Bộ chuyển không gian 5D, Lưu Drive & Nhạc nền -->
+            <div class="pointer-events-auto flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <!-- Chọn bầu không khí 5D (3 sắc xanh nhạt - xanh lá rừng - vàng tennis) -->
+                <div class="glass-card p-1 rounded-2xl flex items-center gap-1">
+                    <button
+                        type="button"
+                        data-theme-btn="sky"
+                        onclick="setAtmosphere('sky')"
+                        class="theme-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-[#14532d] text-[#e2ff4a] shadow-xs"
+                        title="Không gian Rừng Xanh Nhạt & Vàng Tennis"
+                    >
+                        🌿 <span class="hidden lg:inline">Rừng Xanh</span>
+                    </button>
+                    <button
+                        type="button"
+                        data-theme-btn="aqua"
+                        onclick="setAtmosphere('aqua')"
+                        class="theme-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-[#14532d] hover:bg-emerald-900/10"
+                        title="Không gian Trời Xanh Nhạt Trong Lành"
+                    >
+                        🩵 <span class="hidden lg:inline">Trời Nhạt</span>
+                    </button>
+                    <button
+                        type="button"
+                        data-theme-btn="aurora"
+                        onclick="setAtmosphere('aurora')"
+                        class="theme-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-[#14532d] hover:bg-emerald-900/10"
+                        title="Không gian Rừng Đêm & Ánh Vàng Tennis"
+                    >
+                        🎾 <span class="hidden lg:inline">Nắng Rừng</span>
+                    </button>
+                </div>
+
+                <!-- Nút Kết nối & Đồng bộ Google Drive (dùng tài khoản Gmail) -->
+                <button
+                    type="button"
+                    id="btn-cloud-drive"
+                    onclick="openCloudModal()"
+                    class="glass-card hover:bg-sky-100/95 active:scale-95 px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold text-[#0f3d2e] flex items-center gap-1.5 transition cursor-pointer"
+                    title="Kết nối Google Drive (tài khoản Gmail) để lưu online ảnh, lý lịch & nhạc"
+                >
+                    <span id="cloud-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-400/30 shrink-0"></span>
+                    <span id="cloud-nav-label">☁️ Lưu Drive</span>
+                </button>
+
+                <!-- Nút bật / tắt nhạc nền & mở bảng chọn nhạc -->
+                <div class="glass-card p-1 rounded-2xl flex items-center gap-1">
+                    <button
+                        type="button"
+                        id="btn-music-toggle"
+                        onclick="toggleAmbientMusic()"
+                        class="hover:bg-sky-100/95 active:scale-95 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-[#0f3d2e] flex items-center gap-1.5 transition cursor-pointer"
+                        title="Bật hoặc tắt nhạc nền"
+                    >
+                        <span id="music-icon">🔇</span>
+                        <span id="music-eq" class="hidden items-end gap-0.5 h-3.5 px-0.5" aria-hidden="true">
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                            <span class="eq-bar"></span>
+                        </span>
+                        <span id="music-label" class="hidden sm:inline">Nhạc nền: Tắt</span>
+                    </button>
+                    <button
+                        type="button"
+                        onclick="openMusicModal()"
+                        class="px-2.5 py-1.5 rounded-xl bg-[#d4ff00]/80 hover:bg-[#d4ff00] active:scale-95 text-[#0f3d2e] text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
+                        title="Chọn bài nhạc nền hoặc tải file nhạc MP3 từ máy"
+                    >
+                        <span>🎶</span>
+                        <span class="hidden md:inline">Chọn nhạc</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- VÙNG HIỂN THỊ NỘI DUNG TƯƠNG TÁC TRÊN NỀN 3D                          -->
+    <!-- ===================================================================== -->
+    <main class="relative z-10 min-h-screen w-full flex flex-col justify-center items-center px-4 pt-20 pb-10 pointer-events-none">
+
+        <!-- ================================================================= -->
+        <!-- MÀN HÌNH 1 (MẶC ĐỊNH): CỔNG CHÀO 5D "CHÀO MỪNG ĐẾN NHÀ CỦA THUẬN" -->
+        <!-- ================================================================= -->
+        <section id="view-gate" class="w-full max-w-3xl mx-auto text-center pointer-events-auto view-enter">
+            <!-- Khung cổng vòm pha lê 5D có thể bấm trực tiếp -->
+            <div
+                id="welcome-gate-card"
+                onclick="enterFamilyHall()"
+                role="button"
+                tabindex="0"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();enterFamilyHall();}"
+                class="group relative mx-auto rounded-[2.5rem] p-6 sm:p-10 md:p-12 glass-card cursor-pointer transition-all duration-300 hover:scale-[1.015] overflow-hidden"
+            >
+                <!-- Dải ánh sáng xanh nhạt - xanh lá rừng - điểm vàng tennis trên đỉnh cổng -->
+                <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-sky-300 via-[#166534] to-[#d4ff00]"></div>
+
+                <!-- Biểu tượng vòm cổng gia đình tông xanh nhạt - xanh lá rừng - vàng tennis -->
+                <div class="mx-auto w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#14532d] via-[#166534] to-sky-400 p-1 shadow-xl mb-6 animate-float">
+                    <div class="w-full h-full rounded-[1.35rem] bg-[#e6f6ff] flex items-center justify-center">
+                        <svg viewBox="0 0 80 80" class="w-16 h-16 sm:w-20 sm:h-20">
+                            <defs>
+                                <linearGradient id="gateHouseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#166534"/>
+                                    <stop offset="100%" stop-color="#0f3d2e"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Mái nhà xanh lá rừng đậm nét -->
+                            <path d="M10 38 L40 12 L70 38" fill="none" stroke="url(#gateHouseGrad)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Thân nhà xanh nhạt viền xanh lá rừng -->
+                            <path d="M20 35 V64 C20 66.2 21.8 68 24 68 H56 C58.2 68 60 66.2 60 64 V35" fill="#bae6fd" stroke="#14532d" stroke-width="3.6" stroke-linejoin="round"/>
+                            <!-- Cửa vòm chào đón màu xanh lá rừng -->
+                            <path d="M32 68 V50 C32 45.6 35.6 42 40 42 C44.4 42 48 45.6 48 50 V68 Z" fill="url(#gateHouseGrad)"/>
+                            <!-- Điểm nhấn trái tim & ngôi sao màu vàng tennis -->
+                            <path d="M40 33 C40 33 33 28.5 33 24.5 C33 22.3 34.8 20.8 36.8 20.8 C38.2 20.8 39.4 21.6 40 22.7 C40.6 21.6 41.8 20.8 43.2 20.8 C45.2 20.8 47 22.3 47 24.5 C47 28.5 40 33 40 33 Z" fill="#d4ff00" stroke="#14532d" stroke-width="1.6"/>
+                            <circle cx="19" cy="18" r="2.8" fill="#d4ff00" stroke="#166534" stroke-width="1"/>
+                            <circle cx="62" cy="19" r="3" fill="#38bdf8"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- TÊN CỔNG CHÀO CHÍNH XANH LÁ RỪNG SẮC NÉT -->
+                <h1 class="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight text-[#0f3d2e] drop-shadow-[0_2px_12px_rgba(255,255,255,0.85)] mb-3">
+                    CHÀO MỪNG ĐẾN NHÀ CỦA THUẬN
+                </h1>
+
+                <p class="text-sm sm:text-base md:text-lg text-[#1b4332] font-medium max-w-xl mx-auto mb-7 leading-relaxed">
+                    Tổ ấm nhỏ tràn đầy tiếng cười của 4 thành viên. Chạm vào cổng chào để bay vào <strong class="text-[#14532d] bg-[#d9ff26]/55 px-2 py-0.5 rounded-lg">NHÀ CỦA THUẬN</strong> nhé!
+                </p>
+
+                <!-- Nút hành động chính xanh lá rừng viền ánh vàng tennis -->
+                <div class="inline-flex justify-center">
+                    <span class="gate-portal-btn btn-shine relative overflow-hidden inline-flex items-center gap-3 px-7 sm:px-9 py-4 rounded-2xl bg-gradient-to-r from-[#14532d] via-[#166534] to-[#15803d] border-2 border-[#d4ff00]/85 text-white font-extrabold text-sm sm:text-lg shadow-xl group-hover:from-[#0f3d2e] group-hover:to-[#166534] transition-all">
+                        <span>🚪 SẢNH CHÍNH</span>
+                        <svg class="w-5 h-5 text-[#e2ff4a] group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Gợi ý tương tác xoay 3D -->
+            <p class="mt-4 inline-block px-4 py-1.5 rounded-full bg-[#eaf7ff]/85 border border-emerald-800/20 text-xs sm:text-sm font-semibold text-[#14532d] shadow-xs backdrop-blur-xs">
+                💡 Mẹo 5D: Kéo chuột hoặc vuốt nền xung quanh để xoay góc nhìn không gian 3D!
+            </p>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MÀN HÌNH 2: SẢNH CHÍNH GIA ĐÌNH (4 THÀNH VIÊN)                    -->
+        <!-- ================================================================= -->
+        <section id="view-hall" class="hidden w-full max-w-6xl mx-auto space-y-6 pointer-events-auto">
+            <!-- Đầu trang Sảnh chính -->
+            <div class="glass-card rounded-3xl p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+                <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4ff00]/40 text-[#0f3d2e] text-xs font-extrabold border border-emerald-800/30">
+                        <span>🌟 NHÀ CỦA THUẬN</span>
+                        <span>•</span>
+                        <span id="live-greeting">Chào ngày mới tươi vui!</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-[#0f3d2e] tracking-tight">
+                        Gia Đình Nhỏ Của <span class="text-[#166534]">Thuận</span>
+                    </h2>
+                    <p class="text-sm sm:text-base text-[#1b4332] font-medium">
+                        Bấm vào ảnh đại diện của từng thành viên để khám phá trang lý lịch cá nhân nhé!
+                    </p>
+                </div>
+
+                <!-- Nút tương tác thả tim 5D + Chọn ảnh + Ra Cổng Chào -->
+                <div class="flex items-center gap-2.5 flex-wrap justify-center">
+                    <button
+                        type="button"
+                        onclick="triggerLoveBurst(event)"
+                        class="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] active:scale-95 border border-[#d4ff00]/75 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-900/25 transition flex items-center gap-2 cursor-pointer"
+                    >
+                        <span>💚 Thả tim gia đình</span>
+                        <span id="love-counter" class="px-2 py-0.5 rounded-full bg-[#d4ff00] text-[#0f3d2e] text-xs font-black">99+</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="openPhotosModal()"
+                        class="px-4 py-3 rounded-2xl bg-[#d4ff00]/80 hover:bg-[#d4ff00] active:scale-95 border border-emerald-800/35 text-[#0f3d2e] font-extrabold text-xs sm:text-sm shadow-sm transition cursor-pointer"
+                    >
+                        📷 Thay đổi ảnh
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="navigateTo('gate')"
+                        class="px-4 py-3 rounded-2xl bg-sky-100/90 hover:bg-sky-200/80 active:scale-95 border border-emerald-800/30 text-[#0f3d2e] font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer"
+                    >
+                        🚪 Cổng Chào
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lưới 4 thẻ thành viên với hiệu ứng 3D Tilt -->
+            <div id="hall-members-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- 4 thẻ thành viên Thuận, Mười, Bảo An, Bảo Ngọc sẽ được render bằng JS -->
+            </div>
+
+            <!-- Thanh thống kê vui & chỉ dẫn tương tác 5D -->
+            <div class="glass-card rounded-3xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/20">
+                    <div class="text-xl sm:text-2xl font-black text-[#14532d]">4</div>
+                    <div class="text-xs font-bold text-[#1b4332] mt-0.5">Thành viên gắn kết</div>
+                </div>
+                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/20">
+                    <div class="text-xl sm:text-2xl font-black text-[#166534]">100%</div>
+                    <div class="text-xs font-bold text-[#1b4332] mt-0.5">Năng lượng tích cực</div>
+                </div>
+                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/20">
+                    <div class="text-xl sm:text-2xl font-black text-[#14532d]">365</div>
+                    <div class="text-xs font-bold text-[#1b4332] mt-0.5">Ngày tràn tiếng cười</div>
+                </div>
+                <div class="p-3 rounded-2xl bg-[#14532d] border border-[#d4ff00]/60">
+                    <div class="text-xl sm:text-2xl font-black text-[#e2ff4a]">5D</div>
+                    <div class="text-xs font-bold text-sky-100 mt-0.5">Kéo nền để xoay 360°</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MÀN HÌNH 3: TRANG LÝ LỊCH CÁ NHÂN TỪNG THÀNH VIÊN                 -->
+        <!-- ================================================================= -->
+        <section id="view-profile" class="hidden w-full max-w-5xl mx-auto space-y-5 pointer-events-auto">
+            <!-- Thanh điều hướng nhanh giữa 4 thành viên & nút quay lại Sảnh -->
+            <div class="glass-card rounded-3xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3">
+                <button
+                    type="button"
+                    onclick="navigateTo('hall')"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] active:scale-95 border border-[#d4ff00]/70 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-900/25 transition cursor-pointer"
+                >
+                    <svg class="w-4 h-4 text-[#e2ff4a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span>Quay lại Sảnh</span>
+                </button>
+
+                <!-- Các nút chuyển nhanh giữa 4 thành viên -->
+                <div id="profile-quick-switcher" class="flex items-center gap-1.5 flex-wrap justify-center">
+                    <!-- Render động bằng JS -->
+                </div>
+
+                <!-- Nút thay đổi ảnh nhanh & chỉnh sửa lý lịch -->
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                    <button
+                        type="button"
+                        onclick="triggerDirectPhotoUpload(activeMemberId)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#d4ff00]/80 hover:bg-[#d4ff00] active:scale-95 border border-emerald-800/35 text-[#0f3d2e] font-extrabold text-xs sm:text-sm shadow-xs transition cursor-pointer"
+                    >
+                        <span>📷 Thay đổi ảnh</span>
+                    </button>
+                    <button
+                        type="button"
+                        onclick="openEditModal()"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-sky-100/90 hover:bg-sky-200/80 active:scale-95 border border-emerald-800/30 text-[#0f3d2e] font-bold text-xs sm:text-sm shadow-xs transition cursor-pointer"
+                    >
+                        <span>✏️ Sửa thông tin</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Nội dung chi tiết Lý lịch cá nhân -->
+            <div id="profile-content" class="space-y-5">
+                <!-- Render động chi tiết từng thành viên -->
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL CHỈNH SỬA LÝ LỊCH & TẢI ẢNH ĐẠI DIỆN CÁ NHÂN                    -->
+    <!-- ===================================================================== -->
+    <div id="modal-edit" class="hidden fixed inset-0 z-50 bg-[#072017]/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-[#eaf7ff] text-[#0f3d2e] rounded-3xl shadow-2xl border-2 border-emerald-800/35 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-[#0f3d2e] via-[#166534] to-[#1e784b] text-white flex items-center justify-between border-b-2 border-[#d4ff00]/75">
+                <div>
+                    <h3 id="edit-modal-title" class="text-lg font-extrabold">Chỉnh sửa lý lịch cá nhân</h3>
+                    <p class="text-xs text-sky-100">Bạn có thể cập nhật thông tin thật &amp; chọn ảnh đại diện từ máy</p>
+                </div>
+                <button
+                    type="button"
+                    onclick="closeEditModal()"
+                    class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-[#e2ff4a] font-black flex items-center justify-center cursor-pointer transition"
+                >✕</button>
+            </div>
+
+            <form id="edit-profile-form" onsubmit="saveEditedProfile(event)" class="p-5 sm:p-6 overflow-y-auto space-y-4 text-sm">
+                <!-- Đổi ảnh đại diện -->
+                <div class="flex items-center gap-4 p-3.5 rounded-2xl bg-sky-100/80 border border-emerald-800/25">
+                    <div id="edit-avatar-preview" class="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#166534] shadow-md shrink-0 bg-white"></div>
+                    <div class="space-y-1.5 flex-1">
+                        <p class="font-bold text-[#0f3d2e] text-xs sm:text-sm">Ảnh đại diện hiển thị</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <label class="px-3 py-1.5 rounded-xl bg-[#14532d] hover:bg-[#166534] border border-[#d4ff00]/65 text-white text-xs font-bold cursor-pointer transition">
+                                📷 Thay đổi ảnh
+                                <input type="file" id="edit-photo-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                            </label>
+                            <button
+                                type="button"
+                                onclick="resetMemberAvatar()"
+                                class="px-3 py-1.5 rounded-xl bg-white hover:bg-sky-50 border border-emerald-800/25 text-[#0f3d2e] text-xs font-bold cursor-pointer transition"
+                            >
+                                Dùng ảnh Chibi mặc định
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Tên hiển thị</label>
+                        <input id="edit-name" type="text" required class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Vai trò trong gia đình</label>
+                        <input id="edit-role" type="text" required class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Biệt danh thân mật</label>
+                        <input id="edit-nickname" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Ngày sinh / Cung</label>
+                        <input id="edit-birthday" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Công việc / Học tập</label>
+                        <input id="edit-occupation" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#14532d] mb-1">Món ăn yêu thích</label>
+                        <input id="edit-food" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#14532d] mb-1">Câu châm ngôn yêu thích</label>
+                    <input id="edit-quote" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#14532d] mb-1">Giới thiệu bản thân</label>
+                    <textarea id="edit-bio" rows="3" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#14532d] mb-1">Sở thích (ngăn cách bởi dấu phẩy)</label>
+                    <input id="edit-hobbies" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white/95 border border-emerald-800/25 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none">
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2.5">
+                    <button
+                        type="button"
+                        onclick="closeEditModal()"
+                        class="px-4 py-2.5 rounded-xl border border-emerald-800/30 bg-white hover:bg-sky-50 text-[#0f3d2e] font-bold text-sm cursor-pointer transition"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] border border-[#d4ff00]/75 text-white font-extrabold text-sm shadow-md cursor-pointer transition"
+                    >
+                        💾 Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL GẮN NHANH 4 ẢNH ĐẠI DIỆN CHIBI CHO 4 THÀNH VIÊN                 -->
+    <!-- ===================================================================== -->
+    <div id="modal-photos" class="hidden fixed inset-0 z-50 bg-[#072017]/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-[#eaf7ff] text-[#0f3d2e] rounded-3xl shadow-2xl border-2 border-emerald-800/35 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-[#0f3d2e] via-[#166534] to-[#1e784b] text-white flex items-center justify-between border-b-2 border-[#d4ff00]/75">
+                <div>
+                    <h3 class="text-lg font-extrabold">🖼️ Ảnh Đại Diện 4 Thành Viên</h3>
+                    <p class="text-xs text-sky-100">Chọn ảnh từ máy — tự động lưu cục bộ và đồng bộ lên Google Drive nếu đã kết nối</p>
+                </div>
+                <button
+                    type="button"
+                    onclick="closePhotosModal()"
+                    class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-[#e2ff4a] font-black flex items-center justify-center cursor-pointer transition"
+                >✕</button>
+            </div>
+
+            <div id="photos-modal-grid" class="p-5 sm:p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Render 4 ô chọn ảnh cho Thuận, Mười, Bảo An, Bảo Ngọc -->
+            </div>
+
+            <div class="px-6 py-3.5 bg-sky-100/80 border-t border-emerald-800/20 flex flex-wrap items-center justify-between gap-2 text-xs text-[#1b4332]">
+                <span id="photos-cloud-hint">☁️ Kết nối Google Drive ở thanh trên cùng để đồng bộ ảnh lên mạng.</span>
+                <button
+                    type="button"
+                    onclick="closePhotosModal()"
+                    class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] border border-[#d4ff00]/75 text-white font-extrabold text-xs sm:text-sm cursor-pointer transition"
+                >
+                    Hoàn tất
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input ẩn hỗ trợ bấm nút "Thay đổi ảnh" tải ảnh trực tiếp cho từng thành viên -->
+    <input type="file" id="direct-photo-input" accept="image/*" class="hidden" onchange="handleDirectPhotoUpload(event)">
+
+    <!-- ===================================================================== -->
+    <!-- MODAL CHỌN NHẠC NỀN, CHỈNH ÂM LƯỢNG & TẢI NHẠC MP3 TỪ MÁY             -->
+    <!-- ===================================================================== -->
+    <div id="modal-music" class="hidden fixed inset-0 z-50 bg-[#072017]/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-[#eaf7ff] text-[#0f3d2e] rounded-3xl shadow-2xl border-2 border-emerald-800/35 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-[#0f3d2e] via-[#166534] to-[#1e784b] text-white flex items-center justify-between border-b-2 border-[#d4ff00]/75">
+                <div>
+                    <h3 class="text-lg font-extrabold">🎶 Trình Phát Nhạc Nền 5D</h3>
+                    <p class="text-xs text-sky-100">Chọn giai điệu có sẵn hoặc tải bài hát gia đình từ máy</p>
+                </div>
+                <button
+                    type="button"
+                    onclick="closeMusicModal()"
+                    class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-[#e2ff4a] font-black flex items-center justify-center cursor-pointer transition"
+                >✕</button>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-sm">
+                <!-- Trạng thái đang phát & nút Bật/Tắt nhanh -->
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#166534] text-white border border-[#d4ff00]/65 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="text-[11px] font-bold text-[#e2ff4a] uppercase tracking-wider">Đang chọn</div>
+                        <div id="music-now-playing" class="font-extrabold text-sm sm:text-base truncate">🏡 Gia Đình Ấm Áp</div>
+                    </div>
+                    <button
+                        type="button"
+                        id="modal-music-play-btn"
+                        onclick="toggleAmbientMusic()"
+                        class="px-4 py-2 rounded-xl bg-[#d4ff00] hover:bg-[#e2ff4a] active:scale-95 text-[#0f3d2e] font-extrabold text-xs sm:text-sm shrink-0 cursor-pointer transition"
+                    >
+                        ▶ Phát nhạc
+                    </button>
+                </div>
+
+                <!-- Danh sách 3 bản nhạc nền không lời tích hợp sẵn -->
+                <div class="space-y-2">
+                    <p class="text-xs font-extrabold text-[#14532d] uppercase tracking-wide">Giai điệu không lời có sẵn</p>
+                    <div id="music-track-list" class="space-y-2">
+                        <!-- Render động bằng JS -->
+                    </div>
+                </div>
+
+                <!-- Tải bài nhạc MP3 / WAV / M4A từ máy người dùng -->
+                <div class="p-4 rounded-2xl bg-sky-100/85 border border-emerald-800/25 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <p class="font-extrabold text-[#0f3d2e] text-xs sm:text-sm">📂 Hoặc dùng bài nhạc yêu thích từ máy</p>
+                            <p id="custom-music-filename" class="text-[11px] text-[#166534] font-semibold">Chưa tải bài nhạc riêng (hỗ trợ MP3, M4A, WAV &le; 10MB)</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label class="px-3.5 py-2 rounded-xl bg-[#14532d] hover:bg-[#166534] border border-[#d4ff00]/65 text-white text-xs font-extrabold cursor-pointer transition">
+                            🎵 Tải file nhạc lên
+                            <input type="file" id="custom-music-input" accept="audio/*" class="hidden" onchange="handleCustomMusicUpload(event)">
+                        </label>
+                        <button
+                            type="button"
+                            id="btn-play-custom-music"
+                            onclick="selectMusicTrack('custom')"
+                            class="hidden px-3 py-2 rounded-xl bg-[#d4ff00]/85 hover:bg-[#d4ff00] text-[#0f3d2e] text-xs font-extrabold cursor-pointer transition"
+                        >
+                            ▶ Chọn bài đã tải
+                        </button>
+                        <button
+                            type="button"
+                            id="btn-remove-custom-music"
+                            onclick="removeCustomMusic()"
+                            class="hidden px-3 py-2 rounded-xl bg-white hover:bg-sky-50 border border-emerald-800/25 text-rose-700 text-xs font-bold cursor-pointer transition"
+                        >
+                            Xóa nhạc riêng
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thanh chỉnh âm lượng nhạc nền & công tắc hiệu ứng bấm -->
+                <div class="p-4 rounded-2xl bg-white/80 border border-emerald-800/20 space-y-3">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs font-bold text-[#14532d]">
+                            <span>🔊 Âm lượng nhạc nền</span>
+                            <span id="music-volume-label" class="px-2 py-0.5 rounded-lg bg-[#14532d] text-[#e2ff4a] font-black">65%</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="music-volume-slider"
+                            min="0"
+                            max="100"
+                            value="65"
+                            oninput="setMusicVolume(this.value)"
+                            class="w-full accent-[#166534] cursor-pointer"
+                        >
+                    </div>
+
+                    <label class="flex items-center justify-between gap-2 pt-2 border-t border-emerald-800/15 cursor-pointer">
+                        <span class="text-xs sm:text-sm font-bold text-[#0f3d2e]">✨ Bật âm thanh hiệu ứng khi bấm nút &amp; thả tim</span>
+                        <input
+                            type="checkbox"
+                            id="toggle-sfx-checkbox"
+                            checked
+                            onchange="toggleSfxSetting(this.checked)"
+                            class="w-4 h-4 accent-[#166534] cursor-pointer"
+                        >
+                    </label>
+                </div>
+            </div>
+
+            <div class="px-6 py-3.5 bg-sky-100/80 border-t border-emerald-800/20 flex items-center justify-between gap-2 text-xs text-[#1b4332]">
+                <span>💡 Bấm nút Nhạc nền trên thanh công cụ bất cứ lúc nào để bật/tắt.</span>
+                <button
+                    type="button"
+                    onclick="closeMusicModal()"
+                    class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] border border-[#d4ff00]/75 text-white font-extrabold text-xs sm:text-sm cursor-pointer transition"
+                >
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL KẾT NỐI LƯU TRỮ ONLINE TRÊN GOOGLE DRIVE (TÀI KHOẢN GMAIL)      -->
+    <!-- ===================================================================== -->
+    <div id="modal-cloud" class="hidden fixed inset-0 z-50 bg-[#072017]/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-[#eaf7ff] text-[#0f3d2e] rounded-3xl shadow-2xl border-2 border-emerald-800/35 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-[#0f3d2e] via-[#166534] to-[#1e784b] text-white flex items-center justify-between border-b-2 border-[#d4ff00]/75">
+                <div>
+                    <h3 class="text-lg font-extrabold">☁️ Lưu Trữ Online Trên Google Drive (Tài khoản Gmail)</h3>
+                    <p class="text-xs text-sky-100">Ảnh, lý lịch &amp; nhạc nền được lưu thẳng vào thư mục <strong>NhaCuaThuan_5D</strong> trên Drive của bạn</p>
+                </div>
+                <button
+                    type="button"
+                    onclick="closeCloudModal()"
+                    class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 text-[#e2ff4a] font-black flex items-center justify-center cursor-pointer transition"
+                >✕</button>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-sm">
+                <!-- Thẻ trạng thái kết nối hiện tại -->
+                <div id="cloud-status-banner" class="p-4 rounded-2xl bg-white/90 border-2 border-emerald-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <div id="cloud-banner-title" class="font-extrabold text-[#0f3d2e] text-sm">⚪ Chưa kết nối Google Drive</div>
+                        <div id="cloud-banner-sub" class="text-xs text-[#1b4332]">Hiện tại dữ liệu mới lưu cục bộ trên máy này.</div>
+                    </div>
+                    <a
+                        id="cloud-folder-link"
+                        href="#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hidden px-3 py-1.5 rounded-xl bg-sky-100 hover:bg-sky-200 border border-emerald-800/25 text-[#14532d] text-xs font-extrabold text-center shrink-0 transition"
+                    >
+                        📂 Mở thư mục Drive
+                    </a>
+                </div>
+
+                <!-- Ô dán đường dẫn Google Apps Script Web App -->
+                <div class="p-4 rounded-2xl bg-sky-100/85 border border-emerald-800/25 space-y-3">
+                    <label for="cloud-url-input" class="block text-xs sm:text-sm font-extrabold text-[#0f3d2e]">
+                        🔗 Dán đường dẫn Google Apps Script Web App của bạn (đuôi <code>/exec</code>):
+                    </label>
+                    <input
+                        id="cloud-url-input"
+                        type="url"
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-emerald-800/30 text-[#0f3d2e] focus:border-[#166534] focus:ring-2 focus:ring-[#d4ff00]/60 outline-none text-xs sm:text-sm font-mono"
+                    >
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            id="btn-cloud-connect"
+                            onclick="connectGoogleDrive()"
+                            class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] border border-[#d4ff00]/75 text-white font-extrabold text-xs sm:text-sm cursor-pointer transition shadow-sm"
+                        >
+                            ✅ Lưu &amp; Kết nối
+                        </button>
+                        <button
+                            type="button"
+                            id="btn-cloud-push"
+                            onclick="pushAllToDrive()"
+                            class="hidden px-3.5 py-2 rounded-xl bg-[#d4ff00]/85 hover:bg-[#d4ff00] text-[#0f3d2e] font-extrabold text-xs sm:text-sm cursor-pointer transition"
+                        >
+                            ⬆️ Đẩy hết lên Drive
+                        </button>
+                        <button
+                            type="button"
+                            id="btn-cloud-pull"
+                            onclick="pullFromDrive(false)"
+                            class="hidden px-3.5 py-2 rounded-xl bg-white hover:bg-sky-50 border border-emerald-800/25 text-[#0f3d2e] font-bold text-xs sm:text-sm cursor-pointer transition"
+                        >
+                            ⬇️ Tải từ Drive về
+                        </button>
+                        <button
+                            type="button"
+                            id="btn-cloud-disconnect"
+                            onclick="disconnectGoogleDrive()"
+                            class="hidden px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-300 text-rose-700 font-bold text-xs cursor-pointer transition ml-auto"
+                        >
+                            Ngắt kết nối
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Nút xuất bản file HTML đã gắn sẵn link Drive để chia sẻ cho người thân -->
+                <div id="cloud-share-box" class="hidden p-4 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#166534] text-white border border-[#d4ff00]/70 space-y-2">
+                    <div class="font-extrabold text-xs sm:text-sm text-[#e2ff4a]">🎁 Chia sẻ cho cả nhà xem cùng ảnh &amp; nhạc từ Drive</div>
+                    <p class="text-xs text-sky-100 leading-relaxed">
+                        Tải xuống bản HTML đã gắn sẵn liên kết Google Drive của bạn. Khi gửi file này (hoặc đăng lên GitHub Pages / Netlify), người thân mở ra sẽ thấy ngay Cổng Chào và tự động tải đầy đủ ảnh, lý lịch và nhạc nền mới nhất!
+                    </p>
+                    <button
+                        type="button"
+                        onclick="downloadHtmlWithDriveUrl()"
+                        class="px-4 py-2 rounded-xl bg-[#d4ff00] hover:bg-[#e2ff4a] active:scale-95 text-[#0f3d2e] font-extrabold text-xs sm:text-sm cursor-pointer transition"
+                    >
+                        ⬇️ Tải file HTML đã gắn sẵn Drive
+                    </button>
+                </div>
+
+                <!-- Hướng dẫn thiết lập 4 bước bằng chính tài khoản Gmail -->
+                <div class="p-4 rounded-2xl bg-white/85 border border-emerald-800/20 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h4 class="font-extrabold text-[#0f3d2e] text-xs sm:text-sm">📖 Cách tạo kho lưu trữ trên Gmail / Google Drive (chỉ làm 1 lần, miễn phí 100%)</h4>
+                        <button
+                            type="button"
+                            onclick="copyAppsScriptCode()"
+                            class="px-3 py-1.5 rounded-xl bg-[#14532d] hover:bg-[#166534] border border-[#d4ff00]/65 text-[#e2ff4a] font-extrabold text-xs cursor-pointer transition"
+                        >
+                            📋 Sao chép mã Apps Script
+                        </button>
+                    </div>
+
+                    <ol class="list-decimal pl-5 space-y-1.5 text-xs text-[#1b4332] leading-relaxed">
+                        <li>Đăng nhập tài khoản <strong>Gmail</strong> của bạn, truy cập <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" class="text-[#166534] underline font-bold">script.google.com</a> rồi bấm <strong>Dự án mới (New Project)</strong>.</li>
+                        <li>Bấm nút <strong>“📋 Sao chép mã Apps Script”</strong> ở trên, xóa hết chữ mẫu có sẵn trong khung soạn thảo và <strong>dán đè</strong> đoạn mã vào, rồi bấm lưu (<code>Ctrl + S</code>).</li>
+                        <li>Góc trên phải bấm <strong>Triển khai (Deploy)</strong> &rarr; <strong>Tùy chọn triển khai mới (New deployment)</strong> &rarr; bấm biểu tượng bánh răng chọn <strong>Ứng dụng web (Web app)</strong>.</li>
+                        <li>Chọn <em>Thực thi dưới dạng</em>: <strong>Tôi (Me)</strong> và <em>Ai có quyền truy cập</em>: <strong>Bất kỳ ai (Anyone)</strong> &rarr; bấm <strong>Triển khai</strong> &rarr; cấp quyền Google Drive (nếu có cảnh báo chọn <em>Nâng cao &rarr; Đi tới dự án</em>).</li>
+                        <li>Sao chép <strong>URL ứng dụng web</strong> (kết thúc bằng <code>/exec</code>), dán vào ô phía trên và bấm <strong>Lưu &amp; Kết nối</strong> là xong!</li>
+                    </ol>
+
+                    <details class="text-xs">
+                        <summary class="cursor-pointer font-bold text-[#166534] hover:underline">Xem trước đoạn mã Google Apps Script</summary>
+                        <pre id="apps-script-preview" class="mt-2 p-3 rounded-xl bg-[#0b2a20] text-[#d9f99d] overflow-x-auto max-h-48 text-[11px] leading-relaxed font-mono select-all"></pre>
+                    </details>
+                </div>
+            </div>
+
+            <div class="px-6 py-3.5 bg-sky-100/80 border-t border-emerald-800/20 flex items-center justify-between gap-2 text-xs text-[#1b4332]">
+                <span>🔒 Chỉ lưu trong thư mục riêng trên Google Drive thuộc Gmail của bạn.</span>
+                <button
+                    type="button"
+                    onclick="closeCloudModal()"
+                    class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#14532d] to-[#166534] hover:from-[#0f3d2e] hover:to-[#15803d] border border-[#d4ff00]/75 text-white font-extrabold text-xs sm:text-sm cursor-pointer transition"
+                >
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hộp thông báo nổi thân thiện (thay thế hoàn toàn alert/confirm) -->
+    <div id="toast-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"></div>
+
+    <!-- ===================================================================== -->
+    <!-- TOÀN BỘ MÃ JAVASCRIPT: 3D THREE.JS + NHẠC + GOOGLE DRIVE + LÝ LỊCH    -->
+    <!-- ===================================================================== -->
+    <script>
+        // =========================================================================
+        // 1. DỮ LIỆU 4 THÀNH VIÊN GIA ĐÌNH, LƯU TRỮ LOCALSTORAGE & INDEXEDDB ẢNH
+        // =========================================================================
+        const STORAGE_KEY = 'nha_cua_thuan_5d_members_v4';
+        const PHOTO_DB_NAME = 'NhaCuaThuanPhotosDB';
+        const PHOTO_STORE_NAME = 'memberPhotos';
+
+        // Nếu bạn xuất file HTML đã gắn sẵn link Drive, đường dẫn sẽ tự được điền vào hằng số dưới đây
+        const DEFAULT_DRIVE_SCRIPT_URL = "";
+        const CLOUD_URL_STORAGE_KEY = 'nha_cua_thuan_drive_script_url_v1';
+
+        // Dữ liệu mặc định của 4 thành viên (đã cập nhật đúng lý lịch & bảng màu xanh nhạt - xanh lá rừng - vàng tennis)
+        const DEFAULT_MEMBERS = [
+            {
+                id: 'thuan',
+                name: 'Thuận',
+                role: 'Chủ hộ',
+                nickname: 'Bố Thuận vui tính',
+                badgeIcon: '👨',
+                tagline: 'Trụ cột ấm áp, luôn đồng hành cùng cả nhà trên mọi hành trình.',
+                birthday: 'Tháng 02 – Song Ngư',
+                occupation: 'Chủ hộ • Người truyền cảm hứng công nghệ & gia đình',
+                favoriteFood: 'Bún bò – cà phê đen không đường',
+                favoriteColor: 'Xanh lá rừng, Xanh nhạt & Vàng tennis',
+                quote: '“Nhà là nơi chỉ cần về tới cổng là mọi mệt mỏi đều tan biến.”',
+                bio: 'Người bố tận tâm, yêu thích khám phá công nghệ, thiên nhiên rừng núi và luôn dành thời gian cuối tuần chăm sóc tổ ấm nhỏ cùng vợ và hai công chúa.',
+                hobbies: ['Công nghệ & sáng tạo', 'Uống cà phê đen không đường', 'Khám phá rừng núi', 'Chụp ảnh cho cả nhà'],
+                traits: [
+                    { label: 'Trách nhiệm & trụ cột', score: 99 },
+                    { label: 'Hài hước & gần gũi', score: 94 },
+                    { label: 'Yêu thương gia đình', score: 100 }
+                ],
+                familyLove: 'Khoảnh khắc tuyệt vời nhất mỗi ngày là được thấy nụ cười rạng rỡ của vợ Mười và hai cô công chúa Bảo An, Bảo Ngọc bên mâm cơm ấm cúng.',
+                defaultPhoto: 'Gemini_Generated_Image_fzvhrkfzvhrkfzvh (1).png',
+                gradient: 'from-[#0f3d2e] via-[#166534] to-[#22c55e]',
+                softBg: 'bg-sky-100/90',
+                borderColor: 'border-emerald-800/30',
+                accentHex: 0xd4ff00
+            },
+            {
+                id: 'muoi',
+                name: 'Mười',
+                role: 'Vợ chủ hộ',
+                nickname: 'Mẹ Mười đảm đang',
+                badgeIcon: '👩',
+                tagline: 'Ngọn lửa giữ ấm tổ ấm bằng sự dịu dàng và những bữa cơm ngon.',
+                birthday: 'Bí mật tuổi thanh xuân ✨',
+                occupation: 'Vợ chủ hộ • Bếp trưởng & hậu phương vững chắc',
+                favoriteFood: 'Các món ăn gia đình ấm nóng & trái cây tươi',
+                favoriteColor: 'Xanh dương nhạt & Hoa vàng tươi',
+                quote: '“Hạnh phúc giản dị là khi cả nhà luôn khỏe mạnh và ở bên nhau.”',
+                bio: 'Người mẹ dịu dàng, chu đáo, luôn chăm chút từng bữa ăn giấc ngủ cho chồng và hai con gái, mang lại cảm giác bình yên cho cả ngôi nhà.',
+                hobbies: ['Nấu món ngon cho gia đình', 'Chăm sóc nhà cửa', 'Trò chuyện cùng các con', 'Du lịch cùng gia đình'],
+                traits: [
+                    { label: 'Khéo tay & đảm đang', score: 99 },
+                    { label: 'Dịu dàng & chu đáo', score: 98 },
+                    { label: 'Gắn kết yêu thương', score: 100 }
+                ],
+                familyLove: 'Niềm vui lớn nhất của mẹ là nhìn thấy Bảo An, Bảo Ngọc khôn lớn từng ngày và cả bốn người luôn quây quần, chia sẻ mọi câu chuyện nhỏ to.',
+                defaultPhoto: '1795273868048_1580959078181482034_4308977622812376078_eb21698818a564b75762b6ab3d131250.jpg',
+                gradient: 'from-[#14532d] via-[#15803d] to-[#38bdf8]',
+                softBg: 'bg-sky-100/90',
+                borderColor: 'border-emerald-800/30',
+                accentHex: 0x7dd3fc
+            },
+            {
+                id: 'baoan',
+                name: 'Bảo An',
+                role: 'Con gái lớn',
+                nickname: 'Chị hai Bảo An dịu dàng',
+                badgeIcon: '👧',
+                tagline: 'Chị gái lớn chăm ngoan, tinh tế và luôn nhường nhịn, yêu thương em.',
+                birthday: 'Tháng 5 – Cung Kim Ngưu',
+                occupation: 'Học sinh chăm ngoan • Chị gái lớn gương mẫu',
+                favoriteFood: 'Trà sữa ít đường, bánh ngọt & món mẹ nấu',
+                favoriteColor: 'Xanh mint, Xanh nhạt & Hồng pastel',
+                quote: '“Mỗi ngày cố gắng thêm một chút để bố mẹ luôn tự hào.”',
+                bio: 'Cô chị gái lớn hiền lành, kiên trì đúng chất Kim Ngưu, luôn cố gắng trong học tập và là người bạn đồng hành tin cậy của em gái Bảo Ngọc.',
+                hobbies: ['Đọc sách & vẽ tranh', 'Nghe nhạc nhẹ', 'Diện áo dài xinh xắn', 'Chơi cùng em Bảo Ngọc'],
+                traits: [
+                    { label: 'Chăm chỉ & kiên trì', score: 96 },
+                    { label: 'Tình cảm & lễ phép', score: 99 },
+                    { label: 'Sáng tạo & khéo léo', score: 95 }
+                ],
+                familyLove: 'Con thích nhất những buổi cuối tuần cả nhà cùng nhau đi chơi, chụp thật nhiều ảnh đẹp và cười đùa thoải mái bên bố Thuận, mẹ Mười và em Bảo Ngọc.',
+                defaultPhoto: 'Gemini_Generated_Image_4ht8y84ht8y84ht8.png',
+                gradient: 'from-[#0f3d2e] via-[#1e784b] to-[#86efac]',
+                softBg: 'bg-sky-100/90',
+                borderColor: 'border-emerald-800/30',
+                accentHex: 0x4ade80
+            },
+            {
+                id: 'baongoc',
+                name: 'Bảo Ngọc',
+                role: 'Con gái nhỏ',
+                nickname: 'Bé út Bảo Ngọc lanh lợi',
+                badgeIcon: '🎀',
+                tagline: 'Cô bé đeo kính dễ thương, nguồn năng lượng vui nhộn của cả nhà.',
+                birthday: 'Tháng 02 – Cung Song Ngư',
+                occupation: 'Học sinh tinh nghịch • Cây hài nhí của gia đình',
+                favoriteFood: 'Gà rán, kem mát lạnh & bánh kẹo ngọt',
+                favoriteColor: 'Vàng tươi, Hồng phấn & Xanh nhạt',
+                quote: '“Ở đâu có Bảo Ngọc, ở đó có thật nhiều tiếng cười!”',
+                bio: 'Cô con gái nhỏ lanh lợi, giàu trí tưởng tượng cùng cung Song Ngư với bố Thuận, rất thích đọc truyện, ôm gấu bông và mang lại niềm vui bất ngờ cho cả nhà.',
+                hobbies: ['Ôm gấu bông vàng', 'Vẽ nhân vật chibi', 'Đọc truyện tranh', 'Đùa vui với bố mẹ & chị hai'],
+                traits: [
+                    { label: 'Đáng yêu & hồn nhiên', score: 100 },
+                    { label: 'Trí tưởng tượng phong phú', score: 97 },
+                    { label: 'Năng lượng vui vẻ', score: 99 }
+                ],
+                familyLove: 'Con yêu cả nhà thật nhiều vì bố luôn chiều chuộng, mẹ luôn nấu đồ ăn ngon và chị Bảo An luôn chơi cùng con mỗi ngày!',
+                defaultPhoto: 'Gemini_Generated_Image_smanadsmanadsman.png',
+                gradient: 'from-[#166534] via-[#22c55e] to-[#d4ff00]',
+                softBg: 'bg-sky-100/90',
+                borderColor: 'border-emerald-800/30',
+                accentHex: 0xe2ff4a
+            }
+        ];
+
+        // Trạng thái toàn cục của ứng dụng (mặc định mở ở Cổng Chào)
+        let familyMembers = loadMembers();
+        const customPhotoUrls = {};
+        const customPhotoBlobs = {};
+        let currentView = 'gate';
+        let activeMemberId = 'thuan';
+        let loveCount = 99;
+
+        function mergeMembersWithDefaults(list) {
+            if (!Array.isArray(list) || list.length === 0) {
+                return DEFAULT_MEMBERS.map(m => ({ ...m }));
+            }
+            return DEFAULT_MEMBERS.map((def) => {
+                const saved = list.find(p => p && p.id === def.id);
+                if (!saved) return { ...def };
+                return {
+                    ...def,
+                    ...saved,
+                    gradient: def.gradient,
+                    softBg: def.softBg,
+                    borderColor: def.borderColor,
+                    accentHex: def.accentHex,
+                    defaultPhoto: def.defaultPhoto
+                };
+            });
+        }
+
+        function loadMembers() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return DEFAULT_MEMBERS.map(m => ({ ...m }));
+                return mergeMembersWithDefaults(JSON.parse(raw));
+            } catch (e) {
+                return DEFAULT_MEMBERS.map(m => ({ ...m }));
+            }
+        }
+
+        function saveMembersToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(familyMembers));
+            } catch (e) {}
+        }
+
+        function getMemberById(id) {
+            return familyMembers.find(m => m.id === id) || familyMembers[0];
+        }
+
+        // Lưu & tải ảnh đại diện cục bộ bằng IndexedDB
+        function openPhotoDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    reject(new Error('IndexedDB không khả dụng'));
+                    return;
+                }
+                const req = indexedDB.open(PHOTO_DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(PHOTO_STORE_NAME)) {
+                        db.createObjectStore(PHOTO_STORE_NAME);
+                    }
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function savePhotoBlob(memberId, blob) {
+            customPhotoBlobs[memberId] = blob;
+            try {
+                const db = await openPhotoDB();
+                const tx = db.transaction(PHOTO_STORE_NAME, 'readwrite');
+                tx.objectStore(PHOTO_STORE_NAME).put(blob, memberId);
+            } catch (e) {}
+        }
+
+        async function deletePhotoBlob(memberId) {
+            delete customPhotoBlobs[memberId];
+            try {
+                const db = await openPhotoDB();
+                const tx = db.transaction(PHOTO_STORE_NAME, 'readwrite');
+                tx.objectStore(PHOTO_STORE_NAME).delete(memberId);
+            } catch (e) {}
+        }
+
+        async function loadAllSavedPhotos() {
+            try {
+                const db = await openPhotoDB();
+                const tx = db.transaction(PHOTO_STORE_NAME, 'readonly');
+                const store = tx.objectStore(PHOTO_STORE_NAME);
+                await Promise.all(familyMembers.map((m) => new Promise((resolve) => {
+                    try {
+                        const req = store.get(m.id);
+                        req.onsuccess = () => {
+                            if (req.result instanceof Blob) {
+                                customPhotoBlobs[m.id] = req.result;
+                                if (customPhotoUrls[m.id]) URL.revokeObjectURL(customPhotoUrls[m.id]);
+                                customPhotoUrls[m.id] = URL.createObjectURL(req.result);
+                            }
+                            resolve();
+                        };
+                        req.onerror = () => resolve();
+                    } catch (err) {
+                        resolve();
+                    }
+                })));
+            } catch (e) {}
+        }
+
+        // Tiện ích chống XSS khi render chuỗi HTML
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Hộp thông báo nổi (thay thế hoàn toàn alert/confirm)
+        function showToast(message) {
+            const box = document.getElementById('toast-box');
+            if (!box) return;
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto px-4 py-2.5 rounded-2xl bg-[#0f3d2e]/95 text-white border border-[#d4ff00]/75 shadow-xl text-xs sm:text-sm font-bold backdrop-blur-sm transition-all duration-300';
+            toast.textContent = message;
+            box.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // =========================================================================
+        // 2. KẾT NỐI LƯU TRỮ ONLINE GOOGLE DRIVE (DÙNG CHÍNH TÀI KHOẢN GMAIL)
+        // =========================================================================
+        const GOOGLE_APPS_SCRIPT_SOURCE = [
+            '// =========================================================================',
+            '// MÃ GOOGLE APPS SCRIPT - KHO LƯU TRỮ GOOGLE DRIVE CHO "NHÀ CỦA THUẬN 5D"',
+            '// Tự tạo thư mục "NhaCuaThuan_5D" trên Google Drive thuộc Gmail của bạn',
+            '// =========================================================================',
+            'const FOLDER_NAME = "NhaCuaThuan_5D";',
+            'const DATA_FILE_NAME = "du_lieu_gia_dinh.json";',
+            'const AUDIO_META_NAME = "nhac_nen_meta.json";',
+            '',
+            'function getOrCreateFolder() {',
+            '  const folders = DriveApp.getFoldersByName(FOLDER_NAME);',
+            '  if (folders.hasNext()) return folders.next();',
+            '  return DriveApp.createFolder(FOLDER_NAME);',
+            '}',
+            '',
+            'function upsertTextFile(folder, fileName, content) {',
+            '  const files = folder.getFilesByName(fileName);',
+            '  if (files.hasNext()) {',
+            '    const file = files.next();',
+            '    file.setContent(content);',
+            '    return file;',
+            '  }',
+            '  return folder.createFile(fileName, content, MimeType.PLAIN_TEXT);',
+            '}',
+            '',
+            'function upsertBinaryFile(folder, fileName, base64Data, mimeType) {',
+            '  const files = folder.getFilesByName(fileName);',
+            '  while (files.hasNext()) {',
+            '    files.next().setTrashed(true);',
+            '  }',
+            '  const bytes = Utilities.base64Decode(base64Data);',
+            '  const blob = Utilities.newBlob(bytes, mimeType, fileName);',
+            '  return folder.createFile(blob);',
+            '}',
+            '',
+            'function removeFilesByPrefix(folder, prefix) {',
+            '  const files = folder.getFiles();',
+            '  while (files.hasNext()) {',
+            '    const f = files.next();',
+            '    if (f.getName().indexOf(prefix) === 0) f.setTrashed(true);',
+            '  }',
+            '}',
+            '',
+            'function jsonResponse(obj) {',
+            '  return ContentService',
+            '    .createTextOutput(JSON.stringify(obj))',
+            '    .setMimeType(ContentService.MimeType.JSON);',
+            '}',
+            '',
+            'function doGet(e) {',
+            '  try {',
+            '    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "load";',
+            '    const folder = getOrCreateFolder();',
+            '',
+            '    if (action === "ping") {',
+            '      return jsonResponse({ ok: true, folder: folder.getName(), folderUrl: folder.getUrl() });',
+            '    }',
+            '',
+            '    if (action === "getAudio") {',
+            '      const metaFiles = folder.getFilesByName(AUDIO_META_NAME);',
+            '      if (!metaFiles.hasNext()) return jsonResponse({ ok: true, hasAudio: false });',
+            '      const meta = JSON.parse(metaFiles.next().getBlob().getDataAsString("UTF-8"));',
+            '      const audioFiles = folder.getFilesByName(meta.storedFileName);',
+            '      if (!audioFiles.hasNext()) return jsonResponse({ ok: true, hasAudio: false });',
+            '      const blob = audioFiles.next().getBlob();',
+            '      return jsonResponse({',
+            '        ok: true,',
+            '        hasAudio: true,',
+            '        name: meta.originalName,',
+            '        mimeType: meta.mimeType || "audio/mpeg",',
+            '        base64: Utilities.base64Encode(blob.getBytes())',
+            '      });',
+            '    }',
+            '',
+            '    let members = null;',
+            '    const dataFiles = folder.getFilesByName(DATA_FILE_NAME);',
+            '    if (dataFiles.hasNext()) {',
+            '      members = JSON.parse(dataFiles.next().getBlob().getDataAsString("UTF-8"));',
+            '    }',
+            '',
+            '    const memberIds = ["thuan", "muoi", "baoan", "baongoc"];',
+            '    const photos = {};',
+            '    for (let i = 0; i < memberIds.length; i++) {',
+            '      const id = memberIds[i];',
+            '      const imgFiles = folder.getFilesByName("avatar_" + id + ".jpg");',
+            '      if (imgFiles.hasNext()) {',
+            '        const blob = imgFiles.next().getBlob();',
+            '        photos[id] = "data:" + (blob.getContentType() || "image/jpeg") + ";base64," + Utilities.base64Encode(blob.getBytes());',
+            '      }',
+            '    }',
+            '',
+            '    let audioInfo = null;',
+            '    const metaFiles = folder.getFilesByName(AUDIO_META_NAME);',
+            '    if (metaFiles.hasNext()) {',
+            '      audioInfo = JSON.parse(metaFiles.next().getBlob().getDataAsString("UTF-8"));',
+            '    }',
+            '',
+            '    return jsonResponse({',
+            '      ok: true,',
+            '      folderUrl: folder.getUrl(),',
+            '      members: members,',
+            '      photos: photos,',
+            '      audioInfo: audioInfo',
+            '    });',
+            '  } catch (err) {',
+            '    return jsonResponse({ ok: false, error: String(err) });',
+            '  }',
+            '}',
+            '',
+            'function doPost(e) {',
+            '  try {',
+            '    const raw = (e && e.postData && e.postData.contents) ? e.postData.contents : "{}";',
+            '    const payload = JSON.parse(raw);',
+            '    const folder = getOrCreateFolder();',
+            '    const action = payload.action || "";',
+            '',
+            '    if (action === "saveMembers" && Array.isArray(payload.members)) {',
+            '      upsertTextFile(folder, DATA_FILE_NAME, JSON.stringify(payload.members, null, 2));',
+            '      return jsonResponse({ ok: true, message: "Đã lưu lý lịch lên Drive" });',
+            '    }',
+            '',
+            '    if (action === "savePhoto" && payload.memberId && payload.base64) {',
+            '      upsertBinaryFile(folder, "avatar_" + payload.memberId + ".jpg", payload.base64, payload.mimeType || "image/jpeg");',
+            '      return jsonResponse({ ok: true, message: "Đã lưu ảnh lên Drive" });',
+            '    }',
+            '',
+            '    if (action === "deletePhoto" && payload.memberId) {',
+            '      const files = folder.getFilesByName("avatar_" + payload.memberId + ".jpg");',
+            '      while (files.hasNext()) files.next().setTrashed(true);',
+            '      return jsonResponse({ ok: true, message: "Đã xóa ảnh trên Drive" });',
+            '    }',
+            '',
+            '    if (action === "saveAudio" && payload.base64) {',
+            '      removeFilesByPrefix(folder, "nhac_nen_");',
+            '      const safeExt = (payload.ext || "mp3").replace(/[^a-z0-9]/gi, "").toLowerCase() || "mp3";',
+            '      const storedName = "nhac_nen_gia_dinh." + safeExt;',
+            '      upsertBinaryFile(folder, storedName, payload.base64, payload.mimeType || "audio/mpeg");',
+            '      const meta = {',
+            '        originalName: payload.name || storedName,',
+            '        storedFileName: storedName,',
+            '        mimeType: payload.mimeType || "audio/mpeg",',
+            '        updatedAt: new Date().toISOString()',
+            '      };',
+            '      upsertTextFile(folder, AUDIO_META_NAME, JSON.stringify(meta, null, 2));',
+            '      return jsonResponse({ ok: true, message: "Đã lưu nhạc nền lên Drive" });',
+            '    }',
+            '',
+            '    if (action === "deleteAudio") {',
+            '      removeFilesByPrefix(folder, "nhac_nen_");',
+            '      const metaFiles = folder.getFilesByName(AUDIO_META_NAME);',
+            '      while (metaFiles.hasNext()) metaFiles.next().setTrashed(true);',
+            '      return jsonResponse({ ok: true, message: "Đã xóa nhạc nền trên Drive" });',
+            '    }',
+            '',
+            '    return jsonResponse({ ok: false, error: "Action không hợp lệ: " + action });',
+            '  } catch (err) {',
+            '    return jsonResponse({ ok: false, error: String(err) });',
+            '  }',
+            '}'
+        ].join('\n');
+
+        let cloudDriveUrl = loadSavedCloudUrl();
+        let cloudFolderUrl = '';
+        let cloudSyncState = cloudDriveUrl ? 'connected' : 'disconnected';
+        let lastCloudSyncTime = '';
+
+        function loadSavedCloudUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const fromQuery = params.get('drive');
+                if (fromQuery && /^https:\/\/script\.google\.com\/macros\/s\//.test(fromQuery.trim())) {
+                    return fromQuery.trim();
+                }
+            } catch (e) {}
+            try {
+                const saved = localStorage.getItem(CLOUD_URL_STORAGE_KEY);
+                if (saved && saved.trim()) return saved.trim();
+            } catch (e) {}
+            return DEFAULT_DRIVE_SCRIPT_URL || '';
+        }
+
+        function updateCloudUI() {
+            const dot = document.getElementById('cloud-status-dot');
+            const navLabel = document.getElementById('cloud-nav-label');
+            const bannerTitle = document.getElementById('cloud-banner-title');
+            const bannerSub = document.getElementById('cloud-banner-sub');
+            const folderLink = document.getElementById('cloud-folder-link');
+            const pushBtn = document.getElementById('btn-cloud-push');
+            const pullBtn = document.getElementById('btn-cloud-pull');
+            const discBtn = document.getElementById('btn-cloud-disconnect');
+            const shareBox = document.getElementById('cloud-share-box');
+            const photosHint = document.getElementById('photos-cloud-hint');
+
+            if (cloudSyncState === 'syncing') {
+                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping shrink-0';
+                if (navLabel) navLabel.textContent = '☁️ Đang đồng bộ...';
+                if (bannerTitle) bannerTitle.textContent = '🔄 Đang đồng bộ với Google Drive...';
+                if (bannerSub) bannerSub.textContent = 'Vui lòng chờ trong giây lát để dữ liệu lưu an toàn trên Drive.';
+            } else if (cloudDriveUrl && cloudSyncState === 'connected') {
+                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#d4ff00] shrink-0';
+                if (navLabel) navLabel.textContent = '☁️ Drive: Đã kết nối';
+                if (bannerTitle) bannerTitle.textContent = '🟢 Đã kết nối Google Drive (Tự động đồng bộ)';
+                if (bannerSub) bannerSub.textContent = lastCloudSyncTime
+                    ? `Đồng bộ gần nhất lúc ${lastCloudSyncTime}. Mọi thay đổi ảnh, lý lịch & nhạc sẽ tự lưu lên Drive.`
+                    : 'Mọi thay đổi ảnh, lý lịch & nhạc nền sẽ tự động lưu lên Google Drive của bạn.';
+                if (pushBtn) pushBtn.classList.remove('hidden');
+                if (pullBtn) pullBtn.classList.remove('hidden');
+                if (discBtn) discBtn.classList.remove('hidden');
+                if (shareBox) shareBox.classList.remove('hidden');
+                if (photosHint) photosHint.textContent = '🟢 Đã kết nối Google Drive: Ảnh tải lên sẽ tự động đồng bộ online!';
+            } else if (cloudDriveUrl && cloudSyncState === 'error') {
+                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-300 shrink-0';
+                if (navLabel) navLabel.textContent = '☁️ Lỗi Drive';
+                if (bannerTitle) bannerTitle.textContent = '🔴 Không kết nối được Google Drive';
+                if (bannerSub) bannerSub.textContent = 'Hãy kiểm tra lại URL đuôi /exec và đảm bảo đã chọn quyền “Bất kỳ ai (Anyone)”.';
+                if (pushBtn) pushBtn.classList.remove('hidden');
+                if (pullBtn) pullBtn.classList.remove('hidden');
+                if (discBtn) discBtn.classList.remove('hidden');
+                if (shareBox) shareBox.classList.add('hidden');
+            } else {
+                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-400/30 shrink-0';
+                if (navLabel) navLabel.textContent = '☁️ Lưu Drive';
+                if (bannerTitle) bannerTitle.textContent = '⚪ Chưa kết nối Google Drive';
+                if (bannerSub) bannerSub.textContent = 'Hiện tại ảnh & lý lịch đang lưu cục bộ trên trình duyệt máy này.';
+                if (pushBtn) pushBtn.classList.add('hidden');
+                if (pullBtn) pullBtn.classList.add('hidden');
+                if (discBtn) discBtn.classList.add('hidden');
+                if (shareBox) shareBox.classList.add('hidden');
+                if (photosHint) photosHint.textContent = '☁️ Bấm “Lưu Drive” ở góc trên để đồng bộ ảnh lên Google Drive của bạn.';
+            }
+
+            if (folderLink) {
+                if (cloudFolderUrl) {
+                    folderLink.href = cloudFolderUrl;
+                    folderLink.classList.remove('hidden');
+                } else {
+                    folderLink.classList.add('hidden');
+                }
+            }
+        }
+
+        function openCloudModal() {
+            const input = document.getElementById('cloud-url-input');
+            if (input) input.value = cloudDriveUrl || '';
+            const pre = document.getElementById('apps-script-preview');
+            if (pre && !pre.textContent) pre.textContent = GOOGLE_APPS_SCRIPT_SOURCE;
+            updateCloudUI();
+            document.getElementById('modal-cloud').classList.remove('hidden');
+            playSoundEffect('click');
+        }
+
+        function closeCloudModal() {
+            document.getElementById('modal-cloud').classList.add('hidden');
+        }
+
+        function copyAppsScriptCode() {
+            const fallbackCopy = () => {
+                const ta = document.createElement('textarea');
+                ta.value = GOOGLE_APPS_SCRIPT_SOURCE;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('📋 Đã sao chép mã Google Apps Script! Hãy dán vào script.google.com');
+                } catch (e) {
+                    showToast('Hãy mở mục “Xem trước đoạn mã” bên dưới để bôi đen sao chép.');
+                }
+                document.body.removeChild(ta);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_SOURCE)
+                    .then(() => showToast('📋 Đã sao chép mã Google Apps Script! Hãy dán vào script.google.com'))
+                    .catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+        }
+
+        async function callDriveGet(action) {
+            if (!cloudDriveUrl) throw new Error('Chưa cấu hình URL Drive');
+            const sep = cloudDriveUrl.includes('?') ? '&' : '?';
+            const url = `${cloudDriveUrl}${sep}action=${encodeURIComponent(action)}&t=${Date.now()}`;
+            const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (!data || !data.ok) throw new Error(data?.error || 'Phản hồi Drive không hợp lệ');
+            return data;
+        }
+
+        async function callDrivePost(payload) {
+            if (!cloudDriveUrl) return null;
+            const res = await fetch(cloudDriveUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload),
+                redirect: 'follow'
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (!data || !data.ok) throw new Error(data?.error || 'Lỗi lưu lên Google Drive');
+            lastCloudSyncTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            return data;
+        }
+
+        // Nén ảnh thành JPEG sắc nét (~720px) để tải lên Google Drive cực nhanh và nhẹ
+        function compressImageToBase64(blobOrFile, maxSide = 720, quality = 0.86) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(blobOrFile);
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        let w = img.naturalWidth || img.width;
+                        let h = img.naturalHeight || img.height;
+                        if (w > maxSide || h > maxSide) {
+                            const scale = maxSide / Math.max(w, h);
+                            w = Math.round(w * scale);
+                            h = Math.round(h * scale);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        const base64 = dataUrl.split(',')[1];
+                        URL.revokeObjectURL(url);
+                        resolve({ base64, mimeType: 'image/jpeg', dataUrl });
+                    } catch (err) {
+                        URL.revokeObjectURL(url);
+                        reject(err);
+                    }
+                };
+                img.onerror = (err) => {
+                    URL.revokeObjectURL(url);
+                    reject(err);
+                };
+                img.src = url;
+            });
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const str = String(reader.result || '');
+                    const commaIdx = str.indexOf(',');
+                    resolve(commaIdx >= 0 ? str.slice(commaIdx + 1) : str);
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function dataUrlToBlob(dataUrl) {
+            const parts = dataUrl.split(',');
+            const mimeMatch = parts[0].match(/:(.*?);/);
+            const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+            const bin = atob(parts[1]);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        }
+
+        async function connectGoogleDrive() {
+            const input = document.getElementById('cloud-url-input');
+            const rawUrl = (input ? input.value : '').trim();
+            if (!rawUrl || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(rawUrl)) {
+                showToast('⚠️ URL chưa đúng định dạng! Đường dẫn phải bắt đầu bằng https://script.google.com/macros/s/... và kết thúc bằng /exec');
+                return;
+            }
+
+            cloudDriveUrl = rawUrl;
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+
+            try {
+                const ping = await callDriveGet('ping');
+                cloudFolderUrl = ping.folderUrl || '';
+                try {
+                    localStorage.setItem(CLOUD_URL_STORAGE_KEY, cloudDriveUrl);
+                } catch (e) {}
+                cloudSyncState = 'connected';
+                lastCloudSyncTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                updateCloudUI();
+                showToast('🎉 Kết nối Google Drive thành công! Đang kiểm tra dữ liệu...');
+
+                const pulled = await pullFromDrive(true);
+                if (!pulled.hadRemoteData) {
+                    await pushAllToDrive(true);
+                }
+            } catch (err) {
+                console.warn('Lỗi kết nối Drive:', err);
+                cloudSyncState = 'error';
+                updateCloudUI();
+                showToast('❌ Không kết nối được! Hãy kiểm tra đã triển khai Web App ở chế độ “Bất kỳ ai (Anyone)” chưa.');
+            }
+        }
+
+        function disconnectGoogleDrive() {
+            cloudDriveUrl = '';
+            cloudFolderUrl = '';
+            cloudSyncState = 'disconnected';
+            lastCloudSyncTime = '';
+            try {
+                localStorage.removeItem(CLOUD_URL_STORAGE_KEY);
+            } catch (e) {}
+            const input = document.getElementById('cloud-url-input');
+            if (input) input.value = '';
+            updateCloudUI();
+            showToast('Đã ngắt kết nối Google Drive (dữ liệu trên Drive vẫn được giữ nguyên).');
+        }
+
+        async function syncMembersToDrive(silent = false) {
+            if (!cloudDriveUrl) return;
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+            try {
+                await callDrivePost({ action: 'saveMembers', members: familyMembers });
+                cloudSyncState = 'connected';
+                updateCloudUI();
+                if (!silent) showToast('☁️ Đã đồng bộ lý lịch lên Google Drive!');
+            } catch (err) {
+                cloudSyncState = 'error';
+                updateCloudUI();
+                if (!silent) showToast('⚠️ Đã lưu trên máy, nhưng chưa đẩy được lên Drive.');
+            }
+        }
+
+        async function syncPhotoToDrive(memberId, blobOrFile, silent = false) {
+            if (!cloudDriveUrl) return;
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+            try {
+                const compressed = await compressImageToBase64(blobOrFile, 720, 0.86);
+                await callDrivePost({
+                    action: 'savePhoto',
+                    memberId,
+                    base64: compressed.base64,
+                    mimeType: compressed.mimeType
+                });
+                cloudSyncState = 'connected';
+                updateCloudUI();
+                if (!silent) showToast(`☁️ Đã lưu ảnh của ${getMemberById(memberId).name} lên Google Drive!`);
+            } catch (err) {
+                cloudSyncState = 'error';
+                updateCloudUI();
+                if (!silent) showToast('⚠️ Đã lưu ảnh trên máy, nhưng lỗi khi tải lên Drive.');
+            }
+        }
+
+        async function deletePhotoOnDrive(memberId) {
+            if (!cloudDriveUrl) return;
+            try {
+                await callDrivePost({ action: 'deletePhoto', memberId });
+            } catch (e) {}
+        }
+
+        async function syncAudioToDrive(file, silent = false) {
+            if (!cloudDriveUrl) return;
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('⚠️ File nhạc lớn hơn 10MB nên chỉ lưu trên máy (hãy nén MP3 dưới 10MB để lưu lên Drive).');
+                return;
+            }
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+            try {
+                const base64 = await blobToBase64(file);
+                const extMatch = (file.name || '').match(/\.([a-z0-9]+)$/i);
+                await callDrivePost({
+                    action: 'saveAudio',
+                    name: file.name,
+                    ext: extMatch ? extMatch[1] : 'mp3',
+                    mimeType: file.type || 'audio/mpeg',
+                    base64
+                });
+                cloudSyncState = 'connected';
+                updateCloudUI();
+                if (!silent) showToast('☁️ Đã lưu bài nhạc nền lên Google Drive!');
+            } catch (err) {
+                cloudSyncState = 'error';
+                updateCloudUI();
+                if (!silent) showToast('⚠️ Đã lưu nhạc trên máy, nhưng lỗi khi tải lên Drive.');
+            }
+        }
+
+        async function deleteAudioOnDrive() {
+            if (!cloudDriveUrl) return;
+            try {
+                await callDrivePost({ action: 'deleteAudio' });
+            } catch (e) {}
+        }
+
+        async function pushAllToDrive(silent = false) {
+            if (!cloudDriveUrl) return;
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+            try {
+                await callDrivePost({ action: 'saveMembers', members: familyMembers });
+                for (const m of familyMembers) {
+                    if (customPhotoBlobs[m.id]) {
+                        const compressed = await compressImageToBase64(customPhotoBlobs[m.id], 720, 0.86);
+                        await callDrivePost({
+                            action: 'savePhoto',
+                            memberId: m.id,
+                            base64: compressed.base64,
+                            mimeType: compressed.mimeType
+                        });
+                    }
+                }
+                if (customAudioBlobRef && customAudioBlobRef.size <= 10 * 1024 * 1024) {
+                    const base64 = await blobToBase64(customAudioBlobRef);
+                    const extMatch = (customAudioName || '').match(/\.([a-z0-9]+)$/i);
+                    await callDrivePost({
+                        action: 'saveAudio',
+                        name: customAudioName || 'nhac_nen.mp3',
+                        ext: extMatch ? extMatch[1] : 'mp3',
+                        mimeType: customAudioBlobRef.type || 'audio/mpeg',
+                        base64
+                    });
+                }
+                cloudSyncState = 'connected';
+                updateCloudUI();
+                if (!silent) showToast('☁️ Đã đẩy toàn bộ lý lịch, ảnh & nhạc lên Google Drive!');
+            } catch (err) {
+                cloudSyncState = 'error';
+                updateCloudUI();
+                if (!silent) showToast('❌ Đồng bộ lên Drive thất bại, vui lòng thử lại.');
+            }
+        }
+
+        async function pullFromDrive(silent = true) {
+            if (!cloudDriveUrl) return { hadRemoteData: false };
+            cloudSyncState = 'syncing';
+            updateCloudUI();
+            try {
+                const data = await callDriveGet('load');
+                if (data.folderUrl) cloudFolderUrl = data.folderUrl;
+
+                let hadRemoteData = false;
+                if (Array.isArray(data.members) && data.members.length > 0) {
+                    familyMembers = mergeMembersWithDefaults(data.members);
+                    saveMembersToStorage();
+                    hadRemoteData = true;
+                }
+
+                if (data.photos && typeof data.photos === 'object') {
+                    for (const memberId of Object.keys(data.photos)) {
+                        const dataUrl = data.photos[memberId];
+                        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) {
+                            const blob = dataUrlToBlob(dataUrl);
+                            if (customPhotoUrls[memberId]) URL.revokeObjectURL(customPhotoUrls[memberId]);
+                            customPhotoUrls[memberId] = URL.createObjectURL(blob);
+                            await savePhotoBlob(memberId, blob);
+                            hadRemoteData = true;
+                        }
+                    }
+                }
+
+                renderHallMembers();
+                if (currentView === 'profile') renderProfileView();
+                if (!document.getElementById('modal-photos').classList.contains('hidden')) {
+                    renderPhotosModalGrid();
+                }
+
+                if (data.audioInfo && data.audioInfo.originalName) {
+                    hadRemoteData = true;
+                    callDriveGet('getAudio').then(async (audioRes) => {
+                        if (audioRes && audioRes.hasAudio && audioRes.base64) {
+                            const dataUrl = `data:${audioRes.mimeType || 'audio/mpeg'};base64,${audioRes.base64}`;
+                            const blob = dataUrlToBlob(dataUrl);
+                            customAudioBlobRef = blob;
+                            if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+                            customAudioUrl = URL.createObjectURL(blob);
+                            customAudioName = audioRes.name || 'Nhạc gia đình từ Drive';
+                            await saveCustomAudioBlob(new File([blob], customAudioName, { type: blob.type }));
+                            activeTrackId = 'custom';
+                            updateMusicUI();
+                        }
+                    }).catch(() => {});
+                }
+
+                cloudSyncState = 'connected';
+                lastCloudSyncTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                updateCloudUI();
+                if (!silent) showToast('☁️ Đã tải dữ liệu mới nhất từ Google Drive!');
+                return { hadRemoteData };
+            } catch (err) {
+                cloudSyncState = 'error';
+                updateCloudUI();
+                if (!silent) showToast('❌ Không tải được dữ liệu từ Google Drive.');
+                return { hadRemoteData: false };
+            }
+        }
+
+        // Xuất ra bản HTML sạch (đóng sẵn các hộp thoại, mặc định mở ở Cổng Chào và gắn sẵn URL Drive)
+        function downloadHtmlWithDriveUrl() {
+            if (!cloudDriveUrl) {
+                showToast('Hãy kết nối Google Drive trước nhé!');
+                return;
+            }
+            try {
+                const clone = document.documentElement.cloneNode(true);
+
+                // Đảm bảo tất cả hộp thoại đều ở trạng thái đóng trong file xuất ra
+                ['modal-edit', 'modal-photos', 'modal-music', 'modal-cloud'].forEach((id) => {
+                    const m = clone.querySelector(`#${id}`);
+                    if (m) m.classList.add('hidden');
+                });
+
+                // Đảm bảo mặc định mở ở Cổng Chào (giao diện chính)
+                const vGate = clone.querySelector('#view-gate');
+                const vHall = clone.querySelector('#view-hall');
+                const vProfile = clone.querySelector('#view-profile');
+                const navHall = clone.querySelector('#nav-btn-hall');
+                if (vGate) vGate.classList.remove('hidden');
+                if (vHall) vHall.classList.add('hidden');
+                if (vProfile) vProfile.classList.add('hidden');
+                if (navHall) navHall.classList.remove('hidden');
+
+                // Xóa các phần tử render động / blob URL tạm để trang tải mới sạch sẽ từ Drive
+                ['hall-members-grid', 'profile-content', 'photos-modal-grid', 'toast-box', 'apps-script-preview'].forEach((id) => {
+                    const el = clone.querySelector(`#${id}`);
+                    if (el) el.innerHTML = '';
+                });
+                const canvasEl = clone.querySelector('#three-canvas');
+                if (canvasEl) {
+                    canvasEl.removeAttribute('width');
+                    canvasEl.removeAttribute('height');
+                    canvasEl.removeAttribute('style');
+                }
+
+                const rawHtml = '<!DOCTYPE html>\n' + clone.outerHTML;
+                const safeUrl = cloudDriveUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                const patchedHtml = rawHtml.replace(
+                    /const DEFAULT_DRIVE_SCRIPT_URL = "[^"]*";/,
+                    `const DEFAULT_DRIVE_SCRIPT_URL = "${safeUrl}";`
+                );
+                const blob = new Blob([patchedHtml], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'nha-cua-thuan-5d-online.html';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast('🎁 Đã tải xuống file nha-cua-thuan-5d-online.html (gắn sẵn Drive)!');
+            } catch (e) {
+                showToast('Không thể xuất file HTML trên trình duyệt này.');
+            }
+        }
+
+        // =========================================================================
+        // 3. ẢNH CHIBI SVG DỰ PHÒNG ĐẶC TRƯNG CHO 4 THÀNH VIÊN
+        // =========================================================================
+        function getChibiSvg(memberId) {
+            if (memberId === 'thuan') {
+                return `
+                    <svg viewBox="0 0 160 160" class="w-full h-full">
+                        <defs>
+                            <linearGradient id="bgThuan" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#bae6fd"/>
+                                <stop offset="100%" stop-color="#dcfce7"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="160" height="160" fill="url(#bgThuan)"/>
+                        <path d="M0 112 L42 74 L84 112 Z" fill="#166534" opacity="0.55"/>
+                        <path d="M68 116 L118 68 L160 116 Z" fill="#15803d" opacity="0.6"/>
+                        <rect y="110" width="160" height="50" fill="#22c55e" opacity="0.35"/>
+                        <path d="M34 160 C38 122 55 112 80 112 C105 112 122 122 126 160 Z" fill="#1f6f78"/>
+                        <path d="M64 114 L80 128 L96 114" fill="#155259"/>
+                        <path d="M66 116 L76 160 M94 116 L84 160" stroke="#e11d48" stroke-width="5.5" stroke-linecap="round"/>
+                        <rect x="70" y="96" width="20" height="20" rx="8" fill="#fbd2b4"/>
+                        <circle cx="43" cy="76" r="9" fill="#fbd2b4"/>
+                        <circle cx="117" cy="76" r="9" fill="#fbd2b4"/>
+                        <ellipse cx="80" cy="74" rx="36" ry="34" fill="#fde0c8"/>
+                        <path d="M42 66 C42 34 62 24 80 24 C102 24 118 36 118 66 C113 52 103 44 90 48 C82 40 66 44 58 50 C52 50 47 56 42 66 Z" fill="#292524"/>
+                        <ellipse cx="59" cy="83" rx="6" ry="3.5" fill="#fb7185" opacity="0.35"/>
+                        <ellipse cx="101" cy="83" rx="6" ry="3.5" fill="#fb7185" opacity="0.35"/>
+                        <circle cx="66" cy="74" r="5.2" fill="#1c1917"/><circle cx="64.5" cy="72" r="1.8" fill="#fff"/>
+                        <circle cx="94" cy="74" r="5.2" fill="#1c1917"/><circle cx="92.5" cy="72" r="1.8" fill="#fff"/>
+                        <rect x="52" y="64" width="24" height="18" rx="5" fill="none" stroke="#1c1917" stroke-width="3.2"/>
+                        <rect x="84" y="64" width="24" height="18" rx="5" fill="none" stroke="#1c1917" stroke-width="3.2"/>
+                        <line x1="76" y1="72" x2="84" y2="72" stroke="#1c1917" stroke-width="3"/>
+                        <path d="M70 90 Q80 98 90 90" fill="none" stroke="#7c2d12" stroke-width="2.6" stroke-linecap="round"/>
+                    </svg>
+                `;
+            }
+            if (memberId === 'muoi') {
+                return `
+                    <svg viewBox="0 0 160 160" class="w-full h-full">
+                        <defs>
+                            <linearGradient id="bgMuoi" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#bae6fd"/>
+                                <stop offset="100%" stop-color="#a7f3d0"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="160" height="160" fill="url(#bgMuoi)"/>
+                        <path d="M26 160 C32 122 52 112 80 112 C108 112 128 122 134 160 Z" fill="#2563eb"/>
+                        <circle cx="52" cy="142" r="11" fill="#fbbf24" opacity="0.9"/>
+                        <circle cx="110" cy="140" r="12" fill="#60a5fa" opacity="0.95"/>
+                        <circle cx="80" cy="148" r="9" fill="#fde047" opacity="0.85"/>
+                        <path d="M62 114 Q80 130 98 114" fill="#fde0c8"/>
+                        <circle cx="116" cy="100" r="15" fill="#1c1917"/>
+                        <ellipse cx="80" cy="68" rx="44" ry="42" fill="#1c1917"/>
+                        <ellipse cx="80" cy="78" rx="35" ry="33" fill="#fde0c8"/>
+                        <path d="M46 66 C56 42 74 38 92 42 C104 45 112 56 114 68 C108 54 96 46 80 46 C64 46 53 54 46 66 Z" fill="#1c1917"/>
+                        <ellipse cx="58" cy="86" rx="7" ry="4" fill="#fb7185" opacity="0.4"/>
+                        <ellipse cx="102" cy="86" rx="7" ry="4" fill="#fb7185" opacity="0.4"/>
+                        <circle cx="65" cy="76" r="6.5" fill="#1c1917"/><circle cx="63" cy="73.5" r="2.3" fill="#fff"/><circle cx="67.5" cy="78" r="1.1" fill="#fde047"/>
+                        <circle cx="95" cy="76" r="6.5" fill="#1c1917"/><circle cx="93" cy="73.5" r="2.3" fill="#fff"/><circle cx="97.5" cy="78" r="1.1" fill="#fde047"/>
+                        <path d="M71 92 Q80 99 89 92" fill="none" stroke="#be185d" stroke-width="2.6" stroke-linecap="round"/>
+                        <circle cx="28" cy="36" r="3" fill="#fff" opacity="0.85"/>
+                        <circle cx="134" cy="48" r="2.5" fill="#d4ff00"/>
+                    </svg>
+                `;
+            }
+            if (memberId === 'baoan') {
+                return `
+                    <svg viewBox="0 0 160 160" class="w-full h-full">
+                        <defs>
+                            <linearGradient id="bgBaoAn" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#ffe4e6"/>
+                                <stop offset="55%" stop-color="#e0f2fe"/>
+                                <stop offset="100%" stop-color="#fef3c7"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="160" height="160" fill="url(#bgBaoAn)"/>
+                        <path d="M40 70 C36 112 32 140 44 152 L116 152 C126 140 124 110 120 70 Z" fill="#1f2937"/>
+                        <path d="M42 160 C46 122 60 112 80 112 C100 112 114 122 118 160 Z" fill="#a7f3d0" stroke="#065f46" stroke-width="2"/>
+                        <rect x="68" y="106" width="24" height="12" rx="5" fill="#6ee7b7" stroke="#065f46" stroke-width="1.8"/>
+                        <circle cx="70" cy="132" r="4" fill="#fff"/><circle cx="88" cy="140" r="4" fill="#fff"/><circle cx="78" cy="148" r="3.5" fill="#fef08a"/>
+                        <path d="M46 86 Q36 112 42 138" fill="none" stroke="#111827" stroke-width="7" stroke-linecap="round" stroke-dasharray="6 5"/>
+                        <path d="M114 86 Q124 112 118 138" fill="none" stroke="#111827" stroke-width="7" stroke-linecap="round" stroke-dasharray="6 5"/>
+                        <ellipse cx="80" cy="74" rx="34" ry="32" fill="#fde2cc"/>
+                        <path d="M44 70 C44 36 62 24 80 24 C98 24 116 36 116 70 C106 50 92 42 80 42 C68 42 54 50 44 70 Z" fill="#1f2937"/>
+                        <rect x="55" y="34" width="14" height="6" rx="3" transform="rotate(-25 62 37)" fill="#f472b6"/>
+                        <rect x="92" y="34" width="13" height="6" rx="3" transform="rotate(24 98 37)" fill="#c084fc"/>
+                        <ellipse cx="59" cy="83" rx="6" ry="3.5" fill="#fb7185" opacity="0.45"/>
+                        <ellipse cx="101" cy="83" rx="6" ry="3.5" fill="#fb7185" opacity="0.45"/>
+                        <circle cx="66" cy="74" r="6.5" fill="#451a03"/><circle cx="64" cy="71.5" r="2.2" fill="#fff"/>
+                        <circle cx="94" cy="74" r="6.5" fill="#451a03"/><circle cx="92" cy="71.5" r="2.2" fill="#fff"/>
+                        <path d="M74 90 Q80 94 86 90" fill="none" stroke="#be185d" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                `;
+            }
+            return `
+                <svg viewBox="0 0 160 160" class="w-full h-full">
+                    <defs>
+                        <linearGradient id="bgBaoNgoc" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#dcfce7"/>
+                            <stop offset="100%" stop-color="#e0f2fe"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="160" height="160" fill="url(#bgBaoNgoc)"/>
+                    <circle cx="136" cy="112" r="18" fill="#facc15"/>
+                    <circle cx="124" cy="98" r="6" fill="#facc15"/>
+                    <circle cx="146" cy="98" r="6" fill="#facc15"/>
+                    <circle cx="133" cy="110" r="2" fill="#451a03"/>
+                    <path d="M30 160 C34 124 54 112 80 112 C106 112 126 124 130 160 Z" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+                    <path d="M62 114 Q80 128 98 114" fill="#fde0c8"/>
+                    <circle cx="44" cy="78" r="8" fill="#fde0c8"/>
+                    <circle cx="116" cy="78" r="8" fill="#fde0c8"/>
+                    <circle cx="44" cy="87" r="3" fill="none" stroke="#eab308" stroke-width="1.8"/>
+                    <circle cx="116" cy="87" r="3" fill="none" stroke="#eab308" stroke-width="1.8"/>
+                    <ellipse cx="80" cy="75" rx="35" ry="33" fill="#fde0c8"/>
+                    <path d="M43 66 C43 32 60 22 80 22 C100 22 117 32 117 66 L112 58 L104 62 L96 54 L88 61 L80 53 L72 61 L64 54 L56 62 L48 58 Z" fill="#1c1917"/>
+                    <ellipse cx="58" cy="85" rx="6.5" ry="3.5" fill="#fb7185" opacity="0.45"/>
+                    <ellipse cx="102" cy="85" rx="6.5" ry="3.5" fill="#fb7185" opacity="0.45"/>
+                    <circle cx="65" cy="74" r="6.2" fill="#1c1917"/><circle cx="63" cy="71.5" r="2.2" fill="#fff"/>
+                    <circle cx="95" cy="74" r="6.2" fill="#1c1917"/><circle cx="93" cy="71.5" r="2.2" fill="#fff"/>
+                    <rect x="49" y="61" width="28" height="23" rx="9" fill="rgba(255,255,255,0.22)" stroke="#f472b6" stroke-width="3.5"/>
+                    <rect x="83" y="61" width="28" height="23" rx="9" fill="rgba(255,255,255,0.22)" stroke="#f472b6" stroke-width="3.5"/>
+                    <line x1="77" y1="71" x2="83" y2="71" stroke="#f472b6" stroke-width="3.2"/>
+                    <path d="M73 91 Q80 95 87 91" fill="none" stroke="#be185d" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+            `;
+        }
+
+        // =========================================================================
+        // 4. HỆ THỐNG NHẠC NỀN 5D & ÂM THANH HIỆU ỨNG (TONE.JS + NHẠC MP3 RIÊNG)
+        // =========================================================================
+        const MUSIC_DB_NAME = 'NhaCuaThuanMusicDB';
+        const MUSIC_STORE_NAME = 'customAudio';
+
+        const BUILTIN_TRACKS = [
+            {
+                id: 'warm_family',
+                title: '🏡 Gia Đình Ấm Áp',
+                desc: 'Hòa âm piano & chuông dịu nhẹ, tươi sáng và gần gũi',
+                stepMs: 520,
+                chords: [
+                    ['C3', 'G3', 'B3', 'E4'],
+                    ['A2', 'E3', 'G3', 'C4'],
+                    ['F2', 'C3', 'E3', 'A3'],
+                    ['G2', 'D3', 'G3', 'B3']
+                ],
+                melody: [
+                    'E5', 'G5', 'C5', 'D5', 'E5', null, 'G5', 'A5',
+                    'G5', 'E5', 'D5', 'C5', 'A4', 'C5', 'D5', null,
+                    'C5', 'E5', 'A5', 'G5', 'F5', 'E5', 'D5', 'C5',
+                    'D5', 'G5', 'B5', 'A5', 'G5', 'E5', 'D5', null
+                ]
+            },
+            {
+                id: 'forest_sun',
+                title: '🌿 Nắng Mai Rừng Xanh',
+                desc: 'Giai điệu trong trẻo, vui tươi đầy năng lượng tích cực',
+                stepMs: 460,
+                chords: [
+                    ['G2', 'D3', 'F#3', 'B3'],
+                    ['E2', 'B2', 'D3', 'G3'],
+                    ['C3', 'G3', 'B3', 'E4'],
+                    ['D3', 'A3', 'D4', 'F#4']
+                ],
+                melody: [
+                    'B4', 'D5', 'G5', 'F#5', 'G5', 'A5', 'B5', null,
+                    'G5', 'E5', 'B4', 'D5', 'E5', 'G5', 'F#5', null,
+                    'E5', 'G5', 'C6', 'B5', 'A5', 'G5', 'E5', 'D5',
+                    'F#5', 'A5', 'G5', 'F#5', 'E5', 'D5', 'B4', null
+                ]
+            },
+            {
+                id: 'gentle_dream',
+                title: '✨ Giấc Mơ Êm Dịu',
+                desc: 'Hộp nhạc du dương, thư giãn nhẹ nhàng cho buổi tối',
+                stepMs: 620,
+                chords: [
+                    ['F2', 'C3', 'E3', 'A3'],
+                    ['D2', 'A2', 'C3', 'F3'],
+                    ['Bb2', 'F3', 'A3', 'D4'],
+                    ['C3', 'G3', 'Bb3', 'E4']
+                ],
+                melody: [
+                    'A4', 'C5', 'F5', 'E5', 'C5', null, 'A4', 'G4',
+                    'F4', 'A4', 'D5', 'C5', 'A4', null, 'G4', 'F4',
+                    'D5', 'F5', 'A5', 'G5', 'F5', 'D5', 'C5', null,
+                    'E5', 'G5', 'F5', 'E5', 'D5', 'C5', 'G4', null
+                ]
+            }
+        ];
+
+        let sfxEnabled = true;
+        let ambientEnabled = false;
+        let userManuallyMutedMusic = false;
+        let activeTrackId = 'warm_family';
+        let musicVolume = 0.65;
+
+        let toneSynth = null;
+        let padSynth = null;
+        let melodySynth = null;
+        let musicGainNode = null;
+        let ambientInterval = null;
+        let ambientStep = 0;
+
+        let customAudioEl = null;
+        let customAudioUrl = null;
+        let customAudioBlobRef = null;
+        let customAudioName = '';
+
+        // Lưu & tải bài nhạc riêng cục bộ bằng IndexedDB
+        function openMusicDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    reject(new Error('IndexedDB không khả dụng'));
+                    return;
+                }
+                const req = indexedDB.open(MUSIC_DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(MUSIC_STORE_NAME)) {
+                        db.createObjectStore(MUSIC_STORE_NAME);
+                    }
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveCustomAudioBlob(file) {
+            customAudioBlobRef = file;
+            try {
+                const db = await openMusicDB();
+                const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+                tx.objectStore(MUSIC_STORE_NAME).put({ blob: file, name: file.name }, 'bg_track');
+            } catch (e) {}
+        }
+
+        async function loadCustomAudioBlob() {
+            try {
+                const db = await openMusicDB();
+                const tx = db.transaction(MUSIC_STORE_NAME, 'readonly');
+                const req = tx.objectStore(MUSIC_STORE_NAME).get('bg_track');
+                await new Promise((resolve) => {
+                    req.onsuccess = () => {
+                        const res = req.result;
+                        if (res && res.blob instanceof Blob) {
+                            customAudioBlobRef = res.blob;
+                            if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+                            customAudioUrl = URL.createObjectURL(res.blob);
+                            customAudioName = res.name || 'Nhạc gia đình từ máy';
+                        }
+                        resolve();
+                    };
+                    req.onerror = () => resolve();
+                });
+            } catch (e) {}
+            updateMusicUI();
+        }
+
+        async function deleteCustomAudioBlob() {
+            customAudioBlobRef = null;
+            try {
+                const db = await openMusicDB();
+                const tx = db.transaction(MUSIC_STORE_NAME, 'readwrite');
+                tx.objectStore(MUSIC_STORE_NAME).delete('bg_track');
+            } catch (e) {}
+        }
+
+        async function ensureToneReady() {
+            try {
+                if (typeof Tone === 'undefined') return false;
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                if (!toneSynth) {
+                    toneSynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.02, decay: 0.22, sustain: 0.12, release: 0.7 }
+                    }).toDestination();
+                    toneSynth.volume.value = -12;
+                }
+                if (!musicGainNode) {
+                    musicGainNode = new Tone.Gain(musicVolume * 0.55).toDestination();
+                    const warmFilter = new Tone.Filter(1900, 'lowpass').connect(musicGainNode);
+                    const echo = new Tone.FeedbackDelay({ delayTime: 0.3, feedback: 0.22, wet: 0.24 }).connect(warmFilter);
+
+                    padSynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.7, decay: 0.8, sustain: 0.45, release: 2.2 }
+                    }).connect(warmFilter);
+                    padSynth.volume.value = -16;
+
+                    melodySynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.03, decay: 0.35, sustain: 0.18, release: 1.4 }
+                    }).connect(echo);
+                    melodySynth.volume.value = -10;
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function playSoundEffect(type) {
+            if (!sfxEnabled) return;
+            try {
+                const ready = await ensureToneReady();
+                if (!ready || !toneSynth) return;
+                const now = Tone.now();
+                if (type === 'gate') {
+                    toneSynth.triggerAttackRelease('C5', '8n', now);
+                    toneSynth.triggerAttackRelease('E5', '8n', now + 0.08);
+                    toneSynth.triggerAttackRelease('G5', '8n', now + 0.16);
+                    toneSynth.triggerAttackRelease('C6', '4n', now + 0.24);
+                } else if (type === 'profile') {
+                    toneSynth.triggerAttackRelease('E5', '16n', now);
+                    toneSynth.triggerAttackRelease('B5', '8n', now + 0.09);
+                } else if (type === 'heart') {
+                    toneSynth.triggerAttackRelease(['G5', 'B5'], '16n', now);
+                    toneSynth.triggerAttackRelease(['C6', 'E6'], '8n', now + 0.1);
+                } else {
+                    toneSynth.triggerAttackRelease('A5', '32n', now);
+                }
+            } catch (e) {}
+        }
+
+        function stopAmbientLoop() {
+            if (ambientInterval) {
+                clearInterval(ambientInterval);
+                ambientInterval = null;
+            }
+            if (customAudioEl) {
+                try {
+                    customAudioEl.pause();
+                } catch (e) {}
+            }
+        }
+
+        function getActiveTrackLabel() {
+            if (activeTrackId === 'custom' && customAudioUrl) {
+                return `🎵 ${customAudioName || 'Nhạc riêng từ máy'}`;
+            }
+            const found = BUILTIN_TRACKS.find(t => t.id === activeTrackId) || BUILTIN_TRACKS[0];
+            return found.title;
+        }
+
+        async function startBackgroundMusic(silentToast = false) {
+            stopAmbientLoop();
+
+            if (activeTrackId === 'custom' && customAudioUrl) {
+                try {
+                    if (!customAudioEl) {
+                        customAudioEl = new Audio();
+                        customAudioEl.loop = true;
+                    }
+                    if (customAudioEl.src !== customAudioUrl) {
+                        customAudioEl.src = customAudioUrl;
+                    }
+                    customAudioEl.volume = musicVolume;
+                    await customAudioEl.play();
+                    ambientEnabled = true;
+                    userManuallyMutedMusic = false;
+                    updateMusicUI();
+                    if (!silentToast) showToast(`🎵 Đang phát: ${getActiveTrackLabel()}`);
+                    return true;
+                } catch (e) {
+                    showToast('Không thể phát tệp nhạc này, chuyển sang giai điệu có sẵn.');
+                    activeTrackId = 'warm_family';
+                }
+            }
+
+            const ready = await ensureToneReady();
+            if (!ready || !padSynth || !melodySynth) {
+                if (!silentToast) showToast('Không thể khởi động nhạc nền trên trình duyệt này.');
+                return false;
+            }
+
+            const track = BUILTIN_TRACKS.find(t => t.id === activeTrackId) || BUILTIN_TRACKS[0];
+            if (musicGainNode) {
+                musicGainNode.gain.rampTo(musicVolume * 0.55, 0.15);
+            }
+
+            ambientEnabled = true;
+            userManuallyMutedMusic = false;
+            ambientStep = 0;
+
+            const playStep = () => {
+                if (!ambientEnabled || !padSynth || !melodySynth) return;
+                try {
+                    const now = Tone.now();
+                    const stepIdx = ambientStep % track.melody.length;
+
+                    if (stepIdx % 8 === 0) {
+                        const chord = track.chords[Math.floor(stepIdx / 8) % track.chords.length];
+                        padSynth.triggerAttackRelease(chord, (track.stepMs * 7.4) / 1000, now, 0.24);
+                    }
+
+                    const note = track.melody[stepIdx];
+                    if (note) {
+                        const vel = stepIdx % 4 === 0 ? 0.36 : 0.24;
+                        melodySynth.triggerAttackRelease(note, (track.stepMs * 1.4) / 1000, now, vel);
+                    }
+                    ambientStep++;
+                } catch (e) {}
+            };
+
+            playStep();
+            ambientInterval = setInterval(playStep, track.stepMs);
+            updateMusicUI();
+            if (!silentToast) showToast(`🎵 Đang phát nhạc nền: ${track.title}`);
+            return true;
+        }
+
+        function stopBackgroundMusic(silentToast = false) {
+            ambientEnabled = false;
+            userManuallyMutedMusic = true;
+            stopAmbientLoop();
+            updateMusicUI();
+            if (!silentToast) showToast('🔇 Đã tạm dừng nhạc nền.');
+        }
+
+        async function toggleAmbientMusic() {
+            if (!ambientEnabled) {
+                await startBackgroundMusic(false);
+            } else {
+                stopBackgroundMusic(false);
+            }
+        }
+
+        async function selectMusicTrack(trackId) {
+            if (trackId === 'custom' && !customAudioUrl) {
+                showToast('Hãy tải một file nhạc từ máy trước nhé!');
+                return;
+            }
+            activeTrackId = trackId;
+            await startBackgroundMusic(false);
+        }
+
+        function setMusicVolume(val) {
+            const num = Math.max(0, Math.min(100, Number(val) || 0));
+            musicVolume = num / 100;
+            const label = document.getElementById('music-volume-label');
+            if (label) label.textContent = `${num}%`;
+            if (musicGainNode) {
+                try {
+                    musicGainNode.gain.rampTo(musicVolume * 0.55, 0.08);
+                } catch (e) {}
+            }
+            if (customAudioEl) {
+                customAudioEl.volume = musicVolume;
+            }
+        }
+
+        function toggleSfxSetting(checked) {
+            sfxEnabled = !!checked;
+            if (sfxEnabled) playSoundEffect('click');
+        }
+
+        function handleCustomMusicUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            try {
+                if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+                customAudioUrl = URL.createObjectURL(file);
+                customAudioName = file.name;
+                saveCustomAudioBlob(file);
+                activeTrackId = 'custom';
+                startBackgroundMusic(false);
+                if (cloudDriveUrl) {
+                    syncAudioToDrive(file, false);
+                }
+            } catch (e) {
+                showToast('Không thể đọc tệp nhạc này, vui lòng chọn file MP3/WAV khác.');
+            }
+            event.target.value = '';
+        }
+
+        function removeCustomMusic() {
+            if (customAudioEl) {
+                customAudioEl.pause();
+                customAudioEl.removeAttribute('src');
+            }
+            if (customAudioUrl) {
+                URL.revokeObjectURL(customAudioUrl);
+                customAudioUrl = null;
+            }
+            customAudioName = '';
+            deleteCustomAudioBlob();
+            deleteAudioOnDrive();
+            if (activeTrackId === 'custom') {
+                activeTrackId = 'warm_family';
+                if (ambientEnabled) startBackgroundMusic(true);
+            }
+            updateMusicUI();
+            showToast('Đã xóa bài nhạc riêng khỏi bộ nhớ.');
+        }
+
+        function openMusicModal() {
+            updateMusicUI();
+            document.getElementById('modal-music').classList.remove('hidden');
+            playSoundEffect('click');
+        }
+
+        function closeMusicModal() {
+            document.getElementById('modal-music').classList.add('hidden');
+        }
+
+        function updateMusicUI() {
+            const btn = document.getElementById('btn-music-toggle');
+            const iconEl = document.getElementById('music-icon');
+            const eqEl = document.getElementById('music-eq');
+            const labelEl = document.getElementById('music-label');
+            const nowPlayingEl = document.getElementById('music-now-playing');
+            const modalPlayBtn = document.getElementById('modal-music-play-btn');
+
+            if (ambientEnabled) {
+                if (btn) btn.className = 'bg-[#14532d] text-[#e2ff4a] active:scale-95 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs';
+                if (iconEl) iconEl.classList.add('hidden');
+                if (eqEl) { eqEl.classList.remove('hidden'); eqEl.classList.add('inline-flex'); }
+                if (labelEl) labelEl.textContent = 'Nhạc nền: Bật';
+                if (modalPlayBtn) modalPlayBtn.textContent = '⏸ Tạm dừng';
+            } else {
+                if (btn) btn.className = 'hover:bg-sky-100/95 active:scale-95 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-[#0f3d2e] flex items-center gap-1.5 transition cursor-pointer';
+                if (iconEl) { iconEl.classList.remove('hidden'); iconEl.textContent = '🔇'; }
+                if (eqEl) { eqEl.classList.add('hidden'); eqEl.classList.remove('inline-flex'); }
+                if (labelEl) labelEl.textContent = 'Nhạc nền: Tắt';
+                if (modalPlayBtn) modalPlayBtn.textContent = '▶ Phát nhạc';
+            }
+
+            if (nowPlayingEl) nowPlayingEl.textContent = getActiveTrackLabel();
+
+            const listEl = document.getElementById('music-track-list');
+            if (listEl) {
+                listEl.innerHTML = BUILTIN_TRACKS.map(tr => {
+                    const isSelected = activeTrackId === tr.id;
+                    return `
+                        <button
+                            type="button"
+                            onclick="selectMusicTrack('${tr.id}')"
+                            class="w-full p-3 rounded-2xl border text-left flex items-center justify-between gap-3 transition cursor-pointer ${
+                                isSelected
+                                    ? 'bg-[#14532d] text-white border-[#d4ff00] shadow-sm'
+                                    : 'bg-white/85 hover:bg-sky-100/90 text-[#0f3d2e] border-emerald-800/20'
+                            }"
+                        >
+                            <div class="min-w-0">
+                                <div class="font-extrabold text-xs sm:text-sm">${escapeHtml(tr.title)}</div>
+                                <div class="text-[11px] ${isSelected ? 'text-sky-100' : 'text-[#1b4332]/80'}">${escapeHtml(tr.desc)}</div>
+                            </div>
+                            <span class="shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-extrabold ${
+                                isSelected
+                                    ? 'bg-[#d4ff00] text-[#0f3d2e]'
+                                    : 'bg-sky-100 text-[#14532d]'
+                            }">
+                                ${isSelected && ambientEnabled ? 'Đang phát' : (isSelected ? 'Đã chọn' : 'Phát')}
+                            </span>
+                        </button>
+                    `;
+                }).join('');
+            }
+
+            const fnEl = document.getElementById('custom-music-filename');
+            const playCustomBtn = document.getElementById('btn-play-custom-music');
+            const remCustomBtn = document.getElementById('btn-remove-custom-music');
+            if (customAudioUrl) {
+                if (fnEl) fnEl.textContent = `Đã lưu: ${customAudioName}`;
+                if (playCustomBtn) playCustomBtn.classList.remove('hidden');
+                if (remCustomBtn) remCustomBtn.classList.remove('hidden');
+            } else {
+                if (fnEl) fnEl.textContent = 'Chưa tải bài nhạc riêng (hỗ trợ MP3, M4A, WAV <= 10MB)';
+                if (playCustomBtn) playCustomBtn.classList.add('hidden');
+                if (remCustomBtn) remCustomBtn.classList.add('hidden');
+            }
+        }
+
+        // =========================================================================
+        // 5. KHÔNG GIAN 3D / 5D TƯƠNG TÁC BẰNG THREE.JS
+        // =========================================================================
+        let scene = null;
+        let camera = null;
+        let renderer = null;
+        let hemiLight = null;
+        let dirLight = null;
+        let accentLight = null;
+        let gateGroup = null;
+        let hallGroup = null;
+        let particlesMesh = null;
+        let floatingClouds = [];
+        let crystalOrbs = [];
+
+        // Camera khởi tạo sẵn hướng thẳng vào Cổng Chào (giao diện mặc định)
+        const camControl = {
+            isDragging: false,
+            lastX: 0,
+            lastY: 0,
+            pointerNormX: 0,
+            pointerNormY: 0,
+            orbitYaw: 0,
+            orbitPitch: 0,
+            targetYaw: 0,
+            targetPitch: 0,
+            targetPos: { x: 0, y: 2.3, z: 24 },
+            targetLook: { x: 0, y: 2.1, z: 12 },
+            currentLook: { x: 0, y: 2.1, z: 12 }
+        };
+
+        const ATMOSPHERES = {
+            sky: {
+                bgHex: 0xd4f0ff,
+                fogHex: 0xc9eedd,
+                bodyGradient: 'linear-gradient(180deg, #cbeaff 0%, #def5f7 52%, #bfe5cf 100%)',
+                particleHex: 0xd4ff00,
+                gateHex: 0x166534,
+                accentHex: 0xc8f61d
+            },
+            aqua: {
+                bgHex: 0xe2f5ff,
+                fogHex: 0xd7f2fc,
+                bodyGradient: 'linear-gradient(180deg, #dff4ff 0%, #ebf9ff 55%, #ccead8 100%)',
+                particleHex: 0xc8f61d,
+                gateHex: 0x15803d,
+                accentHex: 0xd4ff00
+            },
+            aurora: {
+                bgHex: 0x163d31,
+                fogHex: 0x1d4e3e,
+                bodyGradient: 'linear-gradient(180deg, #0f3327 0%, #164938 55%, #256858 100%)',
+                particleHex: 0xd9ff26,
+                gateHex: 0x38bdf8,
+                accentHex: 0xd4ff00
+            }
+        };
+        let currentAtmosphere = 'sky';
+
+        function initThreeScene() {
+            try {
+                const canvas = document.getElementById('three-canvas');
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(ATMOSPHERES.sky.bgHex);
+                scene.fog = new THREE.FogExp2(ATMOSPHERES.sky.fogHex, 0.02);
+
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                camera = new THREE.PerspectiveCamera(58, width / height, 0.1, 140);
+                camera.position.set(0, 2.3, 24);
+
+                renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                renderer.setSize(width, height, false);
+
+                hemiLight = new THREE.HemisphereLight(0xe0f7ff, 0x14532d, 1.25);
+                scene.add(hemiLight);
+
+                dirLight = new THREE.DirectionalLight(0xffffff, 1.05);
+                dirLight.position.set(10, 18, 16);
+                scene.add(dirLight);
+
+                accentLight = new THREE.PointLight(0xd4ff00, 1.65, 44);
+                accentLight.position.set(0, 5, 14);
+                scene.add(accentLight);
+
+                buildWelcomeGate3D();
+                buildFamilyHall3D();
+                buildFloatingParticlesAndClouds();
+                bindCanvasOrbitEvents(canvas);
+
+                window.addEventListener('resize', handleResize);
+                handleResize();
+            } catch (err) {
+                document.body.style.background = ATMOSPHERES.sky.bodyGradient;
+            }
+        }
+
+        function buildWelcomeGate3D() {
+            gateGroup = new THREE.Group();
+            gateGroup.position.set(0, 0, 14);
+
+            const archGeo = new THREE.TorusGeometry(4.6, 0.24, 18, 64, Math.PI);
+            const archMat = new THREE.MeshStandardMaterial({
+                color: 0x166534,
+                emissive: 0x15803d,
+                emissiveIntensity: 0.42,
+                roughness: 0.25,
+                metalness: 0.35
+            });
+            const archMesh = new THREE.Mesh(archGeo, archMat);
+            archMesh.position.y = 1.6;
+            gateGroup.add(archMesh);
+
+            const outerRingGeo = new THREE.TorusGeometry(5.5, 0.065, 12, 72);
+            const outerRingMat = new THREE.MeshBasicMaterial({
+                color: 0xd4ff00,
+                transparent: true,
+                opacity: 0.85
+            });
+            const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
+            outerRing.position.y = 2.6;
+            outerRing.name = 'gateSpinRing';
+            gateGroup.add(outerRing);
+
+            const pillarGeo = new THREE.CylinderGeometry(0.32, 0.44, 4.2, 20);
+            const pillarMat = new THREE.MeshStandardMaterial({
+                color: 0x14532d,
+                emissive: 0x0f3d2e,
+                emissiveIntensity: 0.28,
+                roughness: 0.28,
+                metalness: 0.22
+            });
+
+            const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            leftPillar.position.set(-4.6, -0.4, 0);
+            gateGroup.add(leftPillar);
+
+            const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            rightPillar.position.set(4.6, -0.4, 0);
+            gateGroup.add(rightPillar);
+
+            const gemGeo = new THREE.OctahedronGeometry(0.55, 0);
+            const gemMat = new THREE.MeshStandardMaterial({
+                color: 0xd9ff26,
+                emissive: 0xa3e635,
+                emissiveIntensity: 0.62,
+                roughness: 0.18,
+                metalness: 0.25
+            });
+            const leftGem = new THREE.Mesh(gemGeo, gemMat);
+            leftGem.position.set(-4.6, 2.2, 0);
+            leftGem.name = 'leftGem';
+            gateGroup.add(leftGem);
+
+            const rightGem = new THREE.Mesh(gemGeo, gemMat);
+            rightGem.position.set(4.6, 2.2, 0);
+            rightGem.name = 'rightGem';
+            gateGroup.add(rightGem);
+
+            scene.add(gateGroup);
+        }
+
+        function buildFamilyHall3D() {
+            hallGroup = new THREE.Group();
+            hallGroup.position.set(0, -1.8, -4);
+
+            const floorGeo = new THREE.CylinderGeometry(11.5, 12.2, 0.5, 48);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x14532d,
+                emissive: 0x166534,
+                emissiveIntensity: 0.3,
+                roughness: 0.35,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            hallGroup.add(floor);
+
+            [4.2, 7.6, 10.6].forEach((radius, idx) => {
+                const ringGeo = new THREE.RingGeometry(radius - 0.12, radius, 64);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: idx === 0 ? 0xd4ff00 : (idx === 1 ? 0x7dd3fc : 0xffffff),
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.78 - idx * 0.15
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.y = 0.28 + idx * 0.01;
+                hallGroup.add(ring);
+            });
+
+            const orbColors = [0x166534, 0x38bdf8, 0x15803d, 0xd4ff00];
+            const orbPositions = [-5.2, -1.8, 1.8, 5.2];
+            crystalOrbs = [];
+
+            orbPositions.forEach((xPos, i) => {
+                const gem = new THREE.Mesh(
+                    new THREE.IcosahedronGeometry(0.85, 0),
+                    new THREE.MeshStandardMaterial({
+                        color: orbColors[i],
+                        emissive: orbColors[i],
+                        emissiveIntensity: 0.42,
+                        roughness: 0.18,
+                        metalness: 0.3
+                    })
+                );
+                gem.position.set(xPos, 2.7 + (i % 2) * 0.45, -1.5);
+                gem.userData = { baseY: gem.position.y, phase: i * 1.4 };
+                hallGroup.add(gem);
+                crystalOrbs.push(gem);
+            });
+
+            scene.add(hallGroup);
+        }
+
+        function buildFloatingParticlesAndClouds() {
+            const count = 380;
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 60;
+                positions[i * 3 + 1] = Math.random() * 24 - 4;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 65 + 4;
+            }
+            const pGeo = new THREE.BufferGeometry();
+            pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const pMat = new THREE.PointsMaterial({
+                color: 0xd4ff00,
+                size: 0.26,
+                transparent: true,
+                opacity: 0.88
+            });
+            particlesMesh = new THREE.Points(pGeo, pMat);
+            scene.add(particlesMesh);
+
+            const cloudMat = new THREE.MeshStandardMaterial({
+                color: 0xf0f9ff,
+                emissive: 0xbae6fd,
+                emissiveIntensity: 0.28,
+                roughness: 0.85,
+                transparent: true,
+                opacity: 0.72
+            });
+
+            const cloudCoords = [
+                [-14, 9, 4], [15, 10, 6], [-18, 7, -14],
+                [17, 8, -16], [0, 13, -22], [-10, 11, 18], [12, 10, 19]
+            ];
+            floatingClouds = [];
+
+            cloudCoords.forEach(([cx, cy, cz], idx) => {
+                const group = new THREE.Group();
+                const s1 = new THREE.Mesh(new THREE.SphereGeometry(1.7, 14, 14), cloudMat);
+                const s2 = new THREE.Mesh(new THREE.SphereGeometry(1.25, 14, 14), cloudMat);
+                const s3 = new THREE.Mesh(new THREE.SphereGeometry(1.15, 14, 14), cloudMat);
+                s2.position.set(1.4, -0.25, 0.2);
+                s3.position.set(-1.35, -0.3, -0.1);
+                group.add(s1, s2, s3);
+                group.position.set(cx, cy, cz);
+                group.userData = { baseX: cx, baseY: cy, phase: idx * 0.9 };
+                scene.add(group);
+                floatingClouds.push(group);
+            });
+        }
+
+        function bindCanvasOrbitEvents(canvas) {
+            const onStart = (x, y) => {
+                camControl.isDragging = true;
+                camControl.lastX = x;
+                camControl.lastY = y;
+            };
+            const onMove = (x, y) => {
+                camControl.pointerNormX = (x / Math.max(1, window.innerWidth) - 0.5) * 2;
+                camControl.pointerNormY = (y / Math.max(1, window.innerHeight) - 0.5) * 2;
+
+                if (camControl.isDragging) {
+                    const dx = x - camControl.lastX;
+                    const dy = y - camControl.lastY;
+                    camControl.targetYaw = Math.max(-0.55, Math.min(0.55, camControl.targetYaw + dx * 0.004));
+                    camControl.targetPitch = Math.max(-0.28, Math.min(0.28, camControl.targetPitch + dy * 0.003));
+                    camControl.lastX = x;
+                    camControl.lastY = y;
+                }
+            };
+            const onEnd = () => {
+                camControl.isDragging = false;
+            };
+
+            canvas.addEventListener('mousedown', (e) => onStart(e.clientX, e.clientY));
+            window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', onEnd);
+
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    onStart(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    onMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+            window.addEventListener('touchend', onEnd);
+        }
+
+        function handleResize() {
+            if (!renderer || !camera) return;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h, false);
+        }
+
+        function setAtmosphere(mode) {
+            if (!ATMOSPHERES[mode]) return;
+            currentAtmosphere = mode;
+            const cfg = ATMOSPHERES[mode];
+
+            if (scene) {
+                scene.background = new THREE.Color(cfg.bgHex);
+                scene.fog = new THREE.FogExp2(cfg.fogHex, 0.02);
+            }
+            if (particlesMesh) {
+                particlesMesh.material.color.setHex(cfg.particleHex);
+            }
+            if (accentLight) {
+                accentLight.color.setHex(cfg.accentHex);
+            }
+            document.body.style.background = cfg.bodyGradient;
+
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                const isSelected = btn.getAttribute('data-theme-btn') === mode;
+                if (isSelected) {
+                    btn.className = 'theme-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-[#14532d] text-[#e2ff4a] shadow-xs';
+                } else {
+                    btn.className = 'theme-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-[#14532d] hover:bg-emerald-900/10';
+                }
+            });
+
+            playSoundEffect('click');
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (!renderer || !scene || !camera) return;
+
+            const t = performance.now() * 0.001;
+
+            camControl.orbitYaw += (camControl.targetYaw - camControl.orbitYaw) * 0.06;
+            camControl.orbitPitch += (camControl.targetPitch - camControl.orbitPitch) * 0.06;
+
+            const parallaxX = camControl.pointerNormX * 1.15;
+            const parallaxY = -camControl.pointerNormY * 0.65;
+
+            const desiredX = camControl.targetPos.x + Math.sin(camControl.orbitYaw) * 4.2 + parallaxX;
+            const desiredY = camControl.targetPos.y + camControl.orbitPitch * 3.5 + parallaxY;
+            const desiredZ = camControl.targetPos.z + (Math.cos(camControl.orbitYaw) - 1) * 2.2;
+
+            camera.position.x += (desiredX - camera.position.x) * 0.055;
+            camera.position.y += (desiredY - camera.position.y) * 0.055;
+            camera.position.z += (desiredZ - camera.position.z) * 0.055;
+
+            camControl.currentLook.x += (camControl.targetLook.x - camControl.currentLook.x) * 0.06;
+            camControl.currentLook.y += (camControl.targetLook.y - camControl.currentLook.y) * 0.06;
+            camControl.currentLook.z += (camControl.targetLook.z - camControl.currentLook.z) * 0.06;
+            camera.lookAt(camControl.currentLook.x, camControl.currentLook.y, camControl.currentLook.z);
+
+            if (gateGroup) {
+                const spinRing = gateGroup.getObjectByName('gateSpinRing');
+                if (spinRing) spinRing.rotation.z = t * 0.35;
+                const lGem = gateGroup.getObjectByName('leftGem');
+                const rGem = gateGroup.getObjectByName('rightGem');
+                if (lGem) { lGem.rotation.y = t * 1.1; lGem.position.y = 2.2 + Math.sin(t * 2) * 0.18; }
+                if (rGem) { rGem.rotation.y = -t * 1.1; rGem.position.y = 2.2 + Math.cos(t * 2) * 0.18; }
+            }
+
+            crystalOrbs.forEach((gem) => {
+                gem.rotation.y = t * 0.8 + gem.userData.phase;
+                gem.rotation.x = Math.sin(t * 0.6 + gem.userData.phase) * 0.35;
+                gem.position.y = gem.userData.baseY + Math.sin(t * 1.7 + gem.userData.phase) * 0.35;
+            });
+
+            if (particlesMesh) {
+                particlesMesh.rotation.y = t * 0.03;
+                particlesMesh.position.y = Math.sin(t * 0.4) * 0.6;
+            }
+            floatingClouds.forEach((c) => {
+                c.position.x = c.userData.baseX + Math.sin(t * 0.25 + c.userData.phase) * 1.4;
+                c.position.y = c.userData.baseY + Math.cos(t * 0.35 + c.userData.phase) * 0.45;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // =========================================================================
+        // 6. ĐIỀU HƯỚNG 5D GIỮA CỔNG CHÀO (MẶC ĐỊNH) <-> SẢNH CHÍNH <-> LÝ LỊCH
+        // =========================================================================
+        function enterFamilyHall() {
+            playSoundEffect('gate');
+
+            if (!ambientEnabled && !userManuallyMutedMusic) {
+                startBackgroundMusic(false);
+            }
+
+            const flash = document.getElementById('warp-flash');
+            flash.classList.remove('opacity-0');
+            flash.classList.add('opacity-90');
+
+            camControl.targetPos = { x: 0, y: 3.1, z: 7.5 };
+            camControl.targetLook = { x: 0, y: 1.2, z: -4 };
+
+            setTimeout(() => {
+                navigateTo('hall', true);
+                flash.classList.remove('opacity-90');
+                flash.classList.add('opacity-0');
+            }, 340);
+        }
+
+        function navigateTo(view, silent = false) {
+            currentView = view;
+            camControl.targetYaw = 0;
+            camControl.targetPitch = 0;
+
+            const vGate = document.getElementById('view-gate');
+            const vHall = document.getElementById('view-hall');
+            const vProfile = document.getElementById('view-profile');
+            const navHallBtn = document.getElementById('nav-btn-hall');
+
+            vGate.classList.add('hidden');
+            vHall.classList.add('hidden');
+            vProfile.classList.add('hidden');
+
+            if (view === 'gate') {
+                vGate.classList.remove('hidden');
+                vGate.classList.remove('view-enter');
+                void vGate.offsetWidth;
+                vGate.classList.add('view-enter');
+                navHallBtn.classList.remove('hidden');
+
+                camControl.targetPos = { x: 0, y: 2.3, z: 24 };
+                camControl.targetLook = { x: 0, y: 2.1, z: 12 };
+                if (!silent) playSoundEffect('click');
+            } else if (view === 'hall') {
+                renderHallMembers();
+                vHall.classList.remove('hidden');
+                vHall.classList.remove('view-enter');
+                void vHall.offsetWidth;
+                vHall.classList.add('view-enter');
+                navHallBtn.classList.add('hidden');
+
+                camControl.targetPos = { x: 0, y: 3.1, z: 7.5 };
+                camControl.targetLook = { x: 0, y: 1.2, z: -4 };
+                if (!silent) playSoundEffect('click');
+            } else if (view === 'profile') {
+                renderProfileView();
+                vProfile.classList.remove('hidden');
+                vProfile.classList.remove('view-enter');
+                void vProfile.offsetWidth;
+                vProfile.classList.add('view-enter');
+                navHallBtn.classList.remove('hidden');
+
+                const idx = familyMembers.findIndex(m => m.id === activeMemberId);
+                const focusX = [-3.2, -1.1, 1.1, 3.2][idx] || 0;
+                camControl.targetPos = { x: focusX, y: 2.4, z: 3.2 };
+                camControl.targetLook = { x: focusX * 0.7, y: 1.0, z: -4.5 };
+
+                const member = getMemberById(activeMemberId);
+                if (accentLight && member) {
+                    accentLight.color.set(member.accentHex);
+                }
+                if (!silent) playSoundEffect('profile');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openMemberProfile(memberId) {
+            activeMemberId = memberId;
+            navigateTo('profile');
+        }
+
+        // =========================================================================
+        // 7. RENDER SẢNH CHÍNH (4 THÀNH VIÊN) & HIỆU ỨNG NGHIÊNG 3D
+        // =========================================================================
+        function getMemberAvatarHtml(member, extraClass = 'w-full h-full') {
+            const fallbackSvg = getChibiSvg(member.id);
+            const imgSrc = customPhotoUrls[member.id] || (member.defaultPhoto ? encodeURI(member.defaultPhoto) : '');
+            if (imgSrc) {
+                return `
+                    <div class="relative ${extraClass} overflow-hidden">
+                        <div class="w-full h-full">${fallbackSvg}</div>
+                        <img
+                            src="${imgSrc}"
+                            alt="Ảnh đại diện ${escapeHtml(member.name)}"
+                            class="absolute inset-0 w-full h-full object-cover object-top"
+                            onerror="this.remove()"
+                        />
+                    </div>
+                `;
+            }
+            return fallbackSvg;
+        }
+
+        function renderHallMembers() {
+            const grid = document.getElementById('hall-members-grid');
+            grid.innerHTML = familyMembers.map((m) => `
+                <article
+                    onclick="openMemberProfile('${m.id}')"
+                    role="button"
+                    tabindex="0"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openMemberProfile('${m.id}');}"
+                    class="tilt-card glass-card rounded-3xl p-5 flex flex-col items-center text-center cursor-pointer group relative overflow-hidden"
+                >
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${m.gradient}"></div>
+
+                    <div class="mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${m.softBg} border ${m.borderColor} text-[#14532d] text-xs font-extrabold">
+                        <span>${m.badgeIcon}</span>
+                        <span>${escapeHtml(m.role)}</span>
+                    </div>
+
+                    <div class="relative mb-4">
+                        <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full p-1.5 bg-gradient-to-br ${m.gradient} shadow-lg group-hover:scale-105 transition-transform duration-300">
+                            <div class="w-full h-full rounded-full overflow-hidden bg-sky-50 border-2 border-white">
+                                ${getMemberAvatarHtml(m)}
+                            </div>
+                        </div>
+                        <span class="absolute bottom-1 right-1 w-9 h-9 rounded-2xl bg-[#d4ff00] text-[#0f3d2e] shadow-md border-2 border-[#14532d] flex items-center justify-center text-base group-hover:rotate-12 transition-transform">
+                            ✨
+                        </span>
+                    </div>
+
+                    <h3 class="text-xl font-black text-[#0f3d2e] group-hover:text-[#166534] transition-colors">
+                        ${escapeHtml(m.name)}
+                    </h3>
+                    <p class="text-xs font-bold text-[#166534] mt-0.5 mb-2.5">${escapeHtml(m.nickname)}</p>
+                    <p class="text-xs sm:text-sm text-[#1b4332]/90 leading-relaxed flex-1 mb-4">
+                        ${escapeHtml(m.tagline)}
+                    </p>
+
+                    <div class="w-full space-y-2">
+                        <div class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-[#14532d] via-[#166534] to-[#15803d] border border-[#d4ff00]/65 text-white font-extrabold text-xs sm:text-sm shadow-md group-hover:brightness-110 transition flex items-center justify-center gap-1.5">
+                            <span>Xem lý lịch cá nhân</span>
+                            <svg class="w-4 h-4 text-[#e2ff4a] group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="event.stopPropagation(); triggerDirectPhotoUpload('${m.id}')"
+                            onkeydown="event.stopPropagation()"
+                            class="w-full py-2 px-3 rounded-xl bg-sky-100/90 hover:bg-[#d4ff00]/85 active:scale-95 border border-emerald-800/30 text-[#0f3d2e] font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                            <span>📷 Thay đổi ảnh</span>
+                        </button>
+                    </div>
+                </article>
+            `).join('');
+
+            grid.querySelectorAll('.tilt-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width - 0.5;
+                    const y = (e.clientY - rect.top) / rect.height - 0.5;
+                    card.style.transform = `perspective(900px) rotateX(${(-y * 12).toFixed(2)}deg) rotateY(${(x * 12).toFixed(2)}deg) translateY(-6px)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+                });
+            });
+        }
+
+        // =========================================================================
+        // 8. RENDER TRANG LÝ LỊCH CÁ NHÂN CHI TIẾT
+        // =========================================================================
+        function renderProfileView() {
+            const member = getMemberById(activeMemberId);
+
+            const switcher = document.getElementById('profile-quick-switcher');
+            switcher.innerHTML = familyMembers.map(m => {
+                const isCurrent = m.id === member.id;
+                return `
+                    <button
+                        type="button"
+                        onclick="openMemberProfile('${m.id}')"
+                        class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                            isCurrent
+                                ? 'bg-[#14532d] text-[#e2ff4a] border border-[#d4ff00]/70 shadow-sm'
+                                : 'bg-sky-100/85 hover:bg-sky-200/80 text-[#0f3d2e] border border-emerald-800/25'
+                        }"
+                    >
+                        <span>${m.badgeIcon}</span>
+                        <span>${escapeHtml(m.name)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const content = document.getElementById('profile-content');
+            content.innerHTML = `
+                <div class="glass-card rounded-[2rem] overflow-hidden">
+                    <div class="h-28 sm:h-36 bg-gradient-to-r ${member.gradient} relative">
+                        <div class="absolute inset-0 opacity-25" style="background-image: radial-gradient(circle at 20% 30%, #d4ff00 2px, transparent 2px), radial-gradient(circle at 80% 70%, #ffffff 2px, transparent 2px); background-size: 32px 32px;"></div>
+                        <div class="absolute top-4 right-5 px-3.5 py-1.5 rounded-full bg-[#0f3d2e]/75 backdrop-blur-sm text-white text-xs font-extrabold border border-[#d4ff00]/65">
+                            Hồ Sơ Thành Viên Gia Đình Thuận
+                        </div>
+                    </div>
+
+                    <div class="px-5 sm:px-8 pb-7 -mt-16 sm:-mt-20 relative">
+                        <div class="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
+                            <div class="relative shrink-0">
+                                <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl p-1.5 bg-gradient-to-br from-[#14532d] via-sky-300 to-[#d4ff00] shadow-xl border-2 border-white">
+                                    <div class="w-full h-full rounded-2xl overflow-hidden bg-sky-50">
+                                        ${getMemberAvatarHtml(member)}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick="triggerDirectPhotoUpload('${member.id}')"
+                                    title="Bấm để tải ảnh đại diện mới từ máy"
+                                    class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-xl bg-[#14532d] hover:bg-[#166534] text-[#e2ff4a] shadow-lg border-2 border-[#d4ff00] flex items-center justify-center gap-1 text-[11px] font-extrabold cursor-pointer transition active:scale-95"
+                                >
+                                    <span>📷</span>
+                                    <span>Thay đổi ảnh</span>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 pt-2 sm:pt-0 space-y-2">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#d4ff00]/45 border border-emerald-800/30 text-[#0f3d2e] text-xs font-extrabold">
+                                    <span>${member.badgeIcon}</span>
+                                    <span>${escapeHtml(member.role)}</span>
+                                    <span>•</span>
+                                    <span>${escapeHtml(member.nickname)}</span>
+                                </div>
+                                <h2 class="text-2xl sm:text-4xl font-black text-[#0f3d2e] tracking-tight">
+                                    ${escapeHtml(member.name)}
+                                </h2>
+                                <p class="text-sm sm:text-base text-[#166534] font-bold">
+                                    ${escapeHtml(member.tagline)}
+                                </p>
+                                <blockquote class="mt-2 p-3.5 rounded-2xl bg-sky-100/80 border-l-4 border-[#166534] text-xs sm:text-sm italic font-semibold text-[#1b4332]">
+                                    ${escapeHtml(member.quote)}
+                                </blockquote>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div class="lg:col-span-5 space-y-5">
+                        <div class="glass-card rounded-3xl p-5 sm:p-6 space-y-3.5">
+                            <h3 class="text-base sm:text-lg font-black text-[#0f3d2e] flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-[#14532d] text-[#e2ff4a] flex items-center justify-center text-sm">🪪</span>
+                                <span>Thông Tin Cá Nhân</span>
+                            </h3>
+                            <div class="space-y-2.5 text-xs sm:text-sm">
+                                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/15 flex items-start justify-between gap-3">
+                                    <span class="font-bold text-[#166534] shrink-0">🎂 Sinh nhật / Cung</span>
+                                    <span class="font-extrabold text-[#0f3d2e] text-right">${escapeHtml(member.birthday)}</span>
+                                </div>
+                                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/15 flex items-start justify-between gap-3">
+                                    <span class="font-bold text-[#166534] shrink-0">💼 Vai trò / Công việc</span>
+                                    <span class="font-extrabold text-[#0f3d2e] text-right">${escapeHtml(member.occupation)}</span>
+                                </div>
+                                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/15 flex items-start justify-between gap-3">
+                                    <span class="font-bold text-[#166534] shrink-0">🍜 Món ăn yêu thích</span>
+                                    <span class="font-extrabold text-[#0f3d2e] text-right">${escapeHtml(member.favoriteFood)}</span>
+                                </div>
+                                <div class="p-3 rounded-2xl bg-sky-100/75 border border-emerald-800/15 flex items-start justify-between gap-3">
+                                    <span class="font-bold text-[#166534] shrink-0">🎨 Màu sắc yêu thích</span>
+                                    <span class="font-extrabold text-[#0f3d2e] text-right">${escapeHtml(member.favoriteColor)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-5 sm:p-6 space-y-4">
+                            <h3 class="text-base sm:text-lg font-black text-[#0f3d2e] flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-[#14532d] text-[#e2ff4a] flex items-center justify-center text-sm">⚡</span>
+                                <span>Chỉ Số Nổi Bật</span>
+                            </h3>
+                            <div class="space-y-3.5">
+                                ${(member.traits || []).map(tr => `
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between text-xs sm:text-sm font-bold">
+                                            <span class="text-[#1b4332]">${escapeHtml(tr.label)}</span>
+                                            <span class="px-2 py-0.5 rounded-lg bg-[#14532d] text-[#e2ff4a] text-xs font-black">${tr.score}%</span>
+                                        </div>
+                                        <div class="w-full h-3 rounded-full bg-sky-100 border border-emerald-800/20 overflow-hidden">
+                                            <div class="h-full rounded-full bg-gradient-to-r from-[#14532d] via-[#166534] to-[#d4ff00]" style="width: ${Math.min(100, Math.max(0, tr.score))}%"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 space-y-5">
+                        <div class="glass-card rounded-3xl p-5 sm:p-6 space-y-3">
+                            <h3 class="text-base sm:text-lg font-black text-[#0f3d2e] flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-[#14532d] text-[#e2ff4a] flex items-center justify-center text-sm">📖</span>
+                                <span>Giới Thiệu Bản Thân</span>
+                            </h3>
+                            <p class="text-sm sm:text-base text-[#1b4332] leading-relaxed font-medium">
+                                ${escapeHtml(member.bio)}
+                            </p>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-5 sm:p-6 space-y-3.5">
+                            <h3 class="text-base sm:text-lg font-black text-[#0f3d2e] flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-[#14532d] text-[#e2ff4a] flex items-center justify-center text-sm">🎯</span>
+                                <span>Sở Thích &amp; Đam Mê</span>
+                            </h3>
+                            <div class="flex flex-wrap gap-2">
+                                ${(member.hobbies || []).map(hb => `
+                                    <span class="px-3.5 py-2 rounded-2xl bg-sky-100/90 border border-emerald-800/25 text-[#0f3d2e] text-xs sm:text-sm font-bold shadow-2xs flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-[#166534] ring-2 ring-[#d4ff00]"></span>
+                                        <span>${escapeHtml(hb)}</span>
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-[#0f3d2e] via-[#14532d] to-[#166534] text-white border-2 border-[#d4ff00]/65 shadow-xl space-y-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <h3 class="text-base sm:text-lg font-black text-[#e2ff4a] flex items-center gap-2">
+                                    <span>💚</span>
+                                    <span>Điều Yêu Thích Nhất Về Gia Đình</span>
+                                </h3>
+                                <button
+                                    type="button"
+                                    onclick="triggerLoveBurst(event)"
+                                    class="px-3 py-1.5 rounded-xl bg-[#d4ff00] hover:bg-[#e2ff4a] active:scale-95 text-[#0f3d2e] font-extrabold text-xs transition cursor-pointer shrink-0"
+                                >
+                                    💚 Thả tim
+                                </button>
+                            </div>
+                            <p class="text-sm sm:text-base text-sky-50 leading-relaxed font-medium">
+                                ${escapeHtml(member.familyLove)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // 9. HỘP THOẠI CHỈNH SỬA LÝ LỊCH & TẢI ẢNH ĐẠI DIỆN CÁ NHÂN
+        // =========================================================================
+        function openEditModal() {
+            const member = getMemberById(activeMemberId);
+            document.getElementById('edit-modal-title').textContent = `Chỉnh sửa lý lịch • ${member.name}`;
+            document.getElementById('edit-avatar-preview').innerHTML = getMemberAvatarHtml(member);
+
+            document.getElementById('edit-name').value = member.name || '';
+            document.getElementById('edit-role').value = member.role || '';
+            document.getElementById('edit-nickname').value = member.nickname || '';
+            document.getElementById('edit-birthday').value = member.birthday || '';
+            document.getElementById('edit-occupation').value = member.occupation || '';
+            document.getElementById('edit-food').value = member.favoriteFood || '';
+            document.getElementById('edit-quote').value = member.quote || '';
+            document.getElementById('edit-bio').value = member.bio || '';
+            document.getElementById('edit-hobbies').value = (member.hobbies || []).join(', ');
+
+            document.getElementById('modal-edit').classList.remove('hidden');
+            playSoundEffect('click');
+        }
+
+        function closeEditModal() {
+            document.getElementById('modal-edit').classList.add('hidden');
+        }
+
+        let directUploadTargetId = null;
+
+        function triggerDirectPhotoUpload(memberId) {
+            directUploadTargetId = memberId || activeMemberId;
+            const input = document.getElementById('direct-photo-input');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
+        function handleDirectPhotoUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file || !directUploadTargetId) return;
+            applyMemberPhotoFile(directUploadTargetId, file);
+            event.target.value = '';
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            applyMemberPhotoFile(activeMemberId, file);
+            event.target.value = '';
+        }
+
+        function applyMemberPhotoFile(memberId, file) {
+            try {
+                if (customPhotoUrls[memberId]) {
+                    URL.revokeObjectURL(customPhotoUrls[memberId]);
+                }
+                const objectUrl = URL.createObjectURL(file);
+                customPhotoUrls[memberId] = objectUrl;
+                savePhotoBlob(memberId, file);
+
+                const member = getMemberById(memberId);
+                const editPreview = document.getElementById('edit-avatar-preview');
+                if (editPreview && activeMemberId === memberId && !document.getElementById('modal-edit').classList.contains('hidden')) {
+                    editPreview.innerHTML = getMemberAvatarHtml(member);
+                }
+                renderHallMembers();
+                if (currentView === 'profile') renderProfileView();
+                if (!document.getElementById('modal-photos').classList.contains('hidden')) {
+                    renderPhotosModalGrid();
+                }
+                playSoundEffect('heart');
+                if (cloudDriveUrl) {
+                    syncPhotoToDrive(memberId, file, false);
+                } else {
+                    showToast(`📷 Đã cập nhật ảnh cho ${member.name}! (Bấm “Lưu Drive” để đồng bộ online)`);
+                }
+            } catch (e) {
+                showToast('Không thể đọc tệp ảnh này, vui lòng thử ảnh khác.');
+            }
+        }
+
+        function resetMemberAvatar(memberId = activeMemberId) {
+            if (customPhotoUrls[memberId]) {
+                URL.revokeObjectURL(customPhotoUrls[memberId]);
+                delete customPhotoUrls[memberId];
+            }
+            deletePhotoBlob(memberId);
+            deletePhotoOnDrive(memberId);
+            const member = getMemberById(memberId);
+            const editPreview = document.getElementById('edit-avatar-preview');
+            if (editPreview && activeMemberId === memberId && !document.getElementById('modal-edit').classList.contains('hidden')) {
+                editPreview.innerHTML = getMemberAvatarHtml(member);
+            }
+            renderHallMembers();
+            if (currentView === 'profile') renderProfileView();
+            if (!document.getElementById('modal-photos').classList.contains('hidden')) {
+                renderPhotosModalGrid();
+            }
+            showToast(`✨ Đã khôi phục ảnh mặc định cho ${member.name}`);
+        }
+
+        function openPhotosModal() {
+            renderPhotosModalGrid();
+            updateCloudUI();
+            document.getElementById('modal-photos').classList.remove('hidden');
+            playSoundEffect('click');
+        }
+
+        function closePhotosModal() {
+            document.getElementById('modal-photos').classList.add('hidden');
+        }
+
+        function renderPhotosModalGrid() {
+            const grid = document.getElementById('photos-modal-grid');
+            if (!grid) return;
+            grid.innerHTML = familyMembers.map(m => `
+                <div class="p-4 rounded-2xl bg-sky-100/80 border border-emerald-800/25 flex items-center gap-3.5">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#166534] shadow-md shrink-0 bg-white">
+                        ${getMemberAvatarHtml(m)}
+                    </div>
+                    <div class="min-w-0 flex-1 space-y-1.5">
+                        <div>
+                            <div class="font-extrabold text-[#0f3d2e] text-sm truncate">${m.badgeIcon} ${escapeHtml(m.name)}</div>
+                            <div class="text-[11px] text-[#166534] font-semibold">${escapeHtml(m.role)}</div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <label class="px-2.5 py-1 rounded-lg bg-[#14532d] hover:bg-[#166534] border border-[#d4ff00]/60 text-white text-xs font-bold cursor-pointer transition">
+                                📷 Thay đổi ảnh
+                                <input type="file" accept="image/*" class="hidden" onchange="if(this.files && this.files[0]){ applyMemberPhotoFile('${m.id}', this.files[0]); this.value=''; }">
+                            </label>
+                            ${customPhotoUrls[m.id] ? `
+                                <button type="button" onclick="resetMemberAvatar('${m.id}')" class="px-2 py-1 rounded-lg bg-white hover:bg-sky-50 border border-emerald-800/25 text-xs font-bold text-[#0f3d2e] cursor-pointer">
+                                    Mặc định
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveEditedProfile(event) {
+            event.preventDefault();
+            const member = getMemberById(activeMemberId);
+
+            member.name = document.getElementById('edit-name').value.trim() || member.name;
+            member.role = document.getElementById('edit-role').value.trim() || member.role;
+            member.nickname = document.getElementById('edit-nickname').value.trim();
+            member.birthday = document.getElementById('edit-birthday').value.trim();
+            member.occupation = document.getElementById('edit-occupation').value.trim();
+            member.favoriteFood = document.getElementById('edit-food').value.trim();
+            member.quote = document.getElementById('edit-quote').value.trim();
+            member.bio = document.getElementById('edit-bio').value.trim();
+
+            const hobbyList = document.getElementById('edit-hobbies').value
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+            if (hobbyList.length > 0) member.hobbies = hobbyList;
+
+            saveMembersToStorage();
+            renderProfileView();
+            renderHallMembers();
+            closeEditModal();
+            playSoundEffect('heart');
+            if (cloudDriveUrl) {
+                syncMembersToDrive(false);
+            } else {
+                showToast(`💾 Đã lưu lý lịch của ${member.name}!`);
+            }
+        }
+
+        // =========================================================================
+        // 10. TƯƠNG TÁC THẢ TIM 5D & LỜI CHÀO THEO GIỜ THỰC TẾ
+        // =========================================================================
+        function triggerLoveBurst(event) {
+            loveCount++;
+            document.getElementById('love-counter').textContent = loveCount;
+            playSoundEffect('heart');
+
+            const symbols = ['💚', '🎾', '🩵', '🌿', '✨'];
+            const originX = event ? event.clientX : window.innerWidth / 2;
+            const originY = event ? event.clientY : window.innerHeight / 2;
+
+            for (let i = 0; i < 8; i++) {
+                const heart = document.createElement('span');
+                heart.className = 'floating-heart text-xl sm:text-2xl';
+                heart.textContent = symbols[i % symbols.length];
+                heart.style.left = `${originX + (Math.random() - 0.5) * 90}px`;
+                heart.style.top = `${originY + (Math.random() - 0.5) * 30}px`;
+                heart.style.animationDuration = `${1.1 + Math.random() * 0.7}s`;
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 1900);
+            }
+        }
+
+        function updateTimeGreeting() {
+            const hour = new Date().getHours();
+            let text = 'Chào ngày mới tràn đầy năng lượng!';
+            if (hour >= 11 && hour < 14) text = 'Chúc cả nhà buổi trưa ngon miệng!';
+            else if (hour >= 14 && hour < 18) text = 'Chúc buổi chiều thật tươi vui!';
+            else if (hour >= 18) text = 'Chúc gia đình buổi tối ấm áp!';
+            const el = document.getElementById('live-greeting');
+            if (el) el.textContent = text;
+        }
+
+        // Đóng modal khi bấm nền tối bên ngoài hoặc phím ESC
+        ['modal-edit', 'modal-photos', 'modal-music', 'modal-cloud'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    if (e.target.id === id) el.classList.add('hidden');
+                });
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeEditModal();
+                closePhotosModal();
+                closeMusicModal();
+                closeCloudModal();
+            }
+        });
+
+        // =========================================================================
+        // 11. KHỞI CHẠY ỨNG DỤNG (MẶC ĐỊNH CỔNG CHÀO) & TỰ ĐỘNG ĐỒNG BỘ DRIVE
+        // =========================================================================
+        window.onload = function () {
+            updateTimeGreeting();
+            initThreeScene();
+            setAtmosphere('sky');
+            renderHallMembers();
+            updateMusicUI();
+            updateCloudUI();
+            animate3D();
+            loadAllSavedPhotos().then(() => {
+                renderHallMembers();
+                if (currentView === 'profile') renderProfileView();
+                if (cloudDriveUrl) {
+                    pullFromDrive(true);
+                }
+            });
+            loadCustomAudioBlob();
+        };
+    </script>
+</body>
+</html>
